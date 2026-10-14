@@ -1,0 +1,13 @@
+node_modules/
+out/
+dist/
+dist-bundle/
+release/
+*.log
+.DS_Store
+*.tsbuildinfo
+.vite/
+.tmp*
+.env
+.env.*
+!.env.example

@@ -1,0 +1,56 @@
+{
+  "name": "@i-pi-desk/agent-host",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./sidecar": {
+      "types": "./dist/sidecar.d.ts",
+      "import": "./dist/sidecar.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json && node scripts/copy-runner.mjs dist",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "bundle": "node scripts/bundle.mjs",
+    "test": "node --experimental-strip-types scripts/verify-approval-preview.ts",
+    "verify:protocol": "pnpm run build && node scripts/verify-protocol.mjs",
+    "verify:plugins": "pnpm run build && node scripts/verify-plugin-host.mjs",
+    "verify:history": "pnpm run build && node scripts/verify-history.mjs",
+    "clean": "node -e \"fs.rmSync('dist',{recursive:true,force:true});fs.rmSync('dist-bundle',{recursive:true,force:true})\"",
+    "verify:approval-timeout": "pnpm run build && node scripts/verify-approval-timeout.mjs",
+    "verify:anthropic-history": "pnpm run build && node scripts/verify-anthropic-history.mjs",
+    "verify:api-matrix": "pnpm run build && node scripts/verify-api-matrix.mjs",
+    "verify:anthropic-tool-loop": "pnpm run build && node scripts/verify-anthropic-tool-loop.mjs",
+    "verify:allow-always": "pnpm run build && node scripts/verify-allow-always.mjs",
+    "verify:deny-feedback": "pnpm run build && node scripts/verify-deny-feedback.mjs",
+    "verify:tools-download": "pnpm run build && node scripts/verify-tools-download.mjs",
+    "verify:no-persistence": "pnpm run build && node scripts/verify-kernel-no-persistence.mjs",
+    "verify:diff-preview": "pnpm run build && node scripts/verify-diff-preview.mjs",
+    "verify:project-trust": "pnpm run build && node scripts/verify-project-trust.mjs",
+    "verify:danger-gate": "pnpm run build && node scripts/verify-danger-gate.mjs",
+    "verify:approval-policy": "node --experimental-strip-types scripts/verify-approval-policy.ts",
+    "verify:plugin-failure": "pnpm run build && node scripts/verify-plugin-failure.mjs",
+    "verify:plugin-orphan": "pnpm run build && node scripts/verify-plugin-orphan.mjs",
+    "verify:doc-claims": "node scripts/verify-doc-claims.mjs",
+    "verify:thinking-level": "pnpm run build && node scripts/verify-thinking-level.mjs",
+    "verify:max-steps": "pnpm run build && node scripts/verify-max-steps.mjs"
+  },
+  "dependencies": {
+    "@earendil-works/pi-agent-core": "1.1.0",
+    "@earendil-works/pi-ai": "1.1.0",
+    "@earendil-works/pi-coding-agent": "1.1.0",
+    "@i-pi-desk/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.3",
+    "esbuild": "^0.25.12",
+    "typescript": "^5.9.3"
+  }
+}

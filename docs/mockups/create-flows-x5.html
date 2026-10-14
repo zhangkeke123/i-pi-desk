@@ -1,0 +1,794 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>i-pi-desk · 新建流程 5 版完整稿</title>
+<style>
+:root{
+  --page:#dfe5ee;--ink:#0f172a;--muted:#64748b;--line:#c5ced9;
+  --font:"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  --mono:ui-monospace,"Cascadia Mono",Consolas,monospace;
+  --c:#f3f5f8;--s:#fff;--side:#eef1f5;--rail:#e8ecf1;--b:#d5dbe3;
+  --i:#152033;--m:#7a8496;--h:#e8edf3;--a:#2f8fa3;--as:#e6f3f6;
+  --ok:#2f8a5b;--err:#b45309;
+  --div:color-mix(in srgb,var(--b) 45%,transparent);
+}
+*{box-sizing:border-box}
+body{
+  margin:0;font-family:var(--font);color:var(--ink);
+  background:
+    radial-gradient(1100px 480px at 10% -10%,#e8f0f6,transparent 55%),
+    radial-gradient(900px 420px at 90% 0%,#eef2f7,transparent 50%),
+    var(--page);
+  padding:20px 16px 64px;
+}
+.wrap{max-width:1360px;margin:0 auto}
+h1{margin:0 0 4px;font-size:20px;letter-spacing:-.03em;font-weight:650}
+.lead{margin:0 0 12px;font-size:13.5px;color:var(--muted);line-height:1.65;max-width:960px}
+.thesis{
+  background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:12px;
+  font-size:13px;line-height:1.65;color:#334155;box-shadow:0 1px 0 rgba(255,255,255,.8) inset;
+}
+.thesis strong{color:#0f172a}
+.thesis .g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:10px}
+.thesis .box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:10px 12px}
+.thesis .box h3{margin:0 0 4px;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:#64748b}
+.rec{
+  margin-top:10px;padding:10px 12px;border-radius:10px;
+  background:linear-gradient(135deg,#0f172a,#1e293b);color:#e2e8f0;font-size:12.5px;line-height:1.55;
+}
+.rec b{color:#fff}
+.meta-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;align-items:center}
+.tag{font-size:11px;padding:3px 8px;border-radius:999px;background:#fff;border:1px solid var(--line);color:#475569}
+.tag.hot{background:#ecfdf5;border-color:#a7f3d0;color:#047857}
+.picks,.scenes{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.picks button,.scenes button{
+  border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 12px;
+  font-size:12px;color:#334155;cursor:pointer;transition:.15s;
+}
+.picks button:hover,.scenes button:hover{border-color:#94a3b8}
+.picks button[aria-selected="true"]{background:#0f172a;border-color:#0f172a;color:#fff}
+.scenes button{border-radius:8px;border-style:dashed;background:#f8fafc;font-size:11.5px}
+.scenes button[aria-selected="true"]{border-style:solid;background:#eef6f8;border-color:#2f8fa3;color:#0f172a}
+.stage{position:relative}
+.frame{
+  display:none;height:min(860px,88vh);border-radius:16px;overflow:hidden;
+  border:1px solid #b0bbc9;box-shadow:0 26px 58px -32px rgba(15,23,42,.48);background:#fff;
+}
+.frame.on{display:grid}
+.cap{
+  margin-top:12px;background:#fff;border:1px solid var(--line);border-radius:12px;
+  padding:13px 15px;font-size:13px;color:#475569;line-height:1.6;
+}
+.cap b{color:#0f172a}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.ptag{font-size:11px;padding:3px 8px;border-radius:6px;background:#f1f5f9;color:#334155}
+.ctag{font-size:11px;padding:3px 8px;border-radius:6px;background:#fef2f2;color:#991b1b}
+
+/* —— app shell —— */
+.app{display:grid;grid-template-columns:48px 272px 1fr;grid-template-rows:1fr;height:100%;min-height:0;background:var(--c)}
+.app > .rail{grid-column:1;grid-row:1}
+.app > .side{grid-column:2;grid-row:1}
+.app > .main{grid-column:3;grid-row:1;min-height:0}
+.rail{
+  background:var(--rail);border-right:1px solid var(--div);
+  display:flex;flex-direction:column;align-items:center;padding:10px 0;gap:3px;
+}
+.ri{
+  width:40px;min-height:40px;border-radius:10px;display:grid;place-items:center;
+  color:var(--m);font-size:9px;text-align:center;line-height:1.15;padding:4px 2px;
+}
+.ri.on{background:var(--s);color:var(--i);box-shadow:0 1px 0 rgba(0,0,0,.05)}
+.ri b{display:block;font-weight:550;margin-top:1px}
+.sp{flex:1}
+.side{
+  background:var(--side);border-right:1px solid var(--div);
+  display:flex;flex-direction:column;min-width:0;min-height:0;
+}
+.side-top{flex-shrink:0;padding:10px 12px 0;display:grid;gap:6px}
+.side-scroll{flex:1;overflow:auto;min-height:0;padding-bottom:12px}
+.main{display:grid;grid-template-rows:42px 1fr auto;min-width:0;min-height:0;position:relative;background:var(--c)}
+.hd{
+  height:42px;display:flex;align-items:center;gap:8px;padding:0 12px;
+  border-bottom:1px solid var(--div);font-size:12.5px;background:var(--c);color:var(--i);
+}
+.path{color:var(--m);font-family:var(--mono);font-size:11px}
+.g{flex:1}
+.body{overflow:auto;padding:18px 20px;min-height:0}
+.composer{padding:0 14px 12px;flex-shrink:0}
+.box{border:1px solid var(--b);border-radius:10px;background:var(--s);padding:8px 10px;box-shadow:0 1px 0 rgba(0,0,0,.02)}
+.ph{color:var(--m);min-height:36px;font-size:13px;padding:4px 0 8px}
+.foot{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.pill{
+  height:24px;padding:0 8px;border-radius:999px;border:1px solid var(--b);
+  background:var(--h);color:var(--m);display:inline-flex;align-items:center;font-size:11px;
+}
+.send{margin-left:auto;width:28px;height:28px;border-radius:50%;background:var(--i);color:#fff;display:grid;place-items:center}
+.btn{
+  height:32px;border:1px solid var(--b);border-radius:8px;background:var(--s);color:var(--i);
+  display:inline-flex;align-items:center;gap:6px;padding:0 10px;font-size:12px;white-space:nowrap;
+}
+.btn.pri{background:var(--i);color:#fff;border-color:var(--i)}
+.btn.ghost{background:transparent;border-style:dashed;color:var(--m)}
+.btn.accent{background:var(--as);border-color:color-mix(in srgb,var(--a) 35%,var(--b));color:var(--i)}
+.btn.hot{outline:2px solid var(--a);outline-offset:1px;box-shadow:0 0 0 3px color-mix(in srgb,var(--a) 18%,transparent)}
+.btn.block{width:100%;justify-content:center}
+.btn.mini{height:22px;padding:0 6px;font-size:11px;border-radius:6px}
+.lbl{
+  padding:10px 12px 4px;font-family:var(--mono);font-size:10px;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--m);display:flex;align-items:center;gap:6px;
+}
+.lbl .n{margin-left:auto;text-transform:none;letter-spacing:0}
+.row{
+  margin:1px 8px;padding:8px;border-radius:8px;display:flex;align-items:flex-start;gap:8px;
+  font-size:12.5px;color:var(--i);min-width:0;
+}
+.row.on{background:var(--as)}
+.row .t{flex:1;min-width:0}
+.row .t .title{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500}
+.row .t .sum{font-size:11px;color:var(--m);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meta{font-family:var(--mono);font-size:10px;color:var(--m);padding-top:2px;flex-shrink:0}
+.dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:5px}
+.st{width:14px;text-align:center;color:var(--m);font-size:11px;padding-top:2px;flex-shrink:0}
+.st.run{color:var(--a)}.st.ok{color:var(--ok)}.st.err{color:var(--err)}
+.pg{margin:2px 8px 6px}
+.pg-hd{display:flex;align-items:center;gap:7px;padding:7px 8px;border-radius:8px;font-size:12.5px}
+.pg-hd .name{flex:1;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pg-hd.mark{background:var(--as)}
+.search{
+  height:30px;border:1px solid var(--b);border-radius:8px;background:var(--s);color:var(--m);
+  display:flex;align-items:center;gap:6px;padding:0 9px;font-size:12px;margin:0 12px 6px;
+}
+.hint{font-size:11.5px;color:var(--m);line-height:1.5;padding:0 12px 8px}
+.hint.mark{
+  outline:1px dashed var(--a);border-radius:8px;margin:4px 8px 8px;padding:8px 10px;
+  background:color-mix(in srgb,var(--as) 60%,transparent);
+}
+.home{max-width:620px;margin:4px auto;display:grid;gap:12px;align-content:start}
+.home h2{margin:0;font-size:18px;letter-spacing:-.03em;color:var(--i)}
+.home p{margin:0;font-size:13px;color:var(--m);line-height:1.55}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.card{background:var(--s);border:1px solid var(--b);border-radius:10px;padding:11px 12px}
+.card h3{margin:0 0 8px;font-size:10.5px;font-family:var(--mono);letter-spacing:.07em;text-transform:uppercase;color:var(--m);font-weight:550}
+.item{display:flex;align-items:center;gap:8px;padding:7px 0;border-top:1px solid color-mix(in srgb,var(--b) 65%,transparent);font-size:12.5px;color:var(--i)}
+.item:first-of-type{border-top:0}
+.item small{margin-left:auto;color:var(--m);font-family:var(--mono);font-size:10px}
+.stat b{display:block;font-size:16px;font-weight:650;color:var(--i)}
+.stat span{font-size:10.5px;color:var(--m);font-family:var(--mono)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{
+  height:26px;padding:0 10px;border-radius:999px;border:1px solid var(--b);
+  background:var(--s);font-size:11.5px;display:inline-flex;align-items:center;gap:5px;color:var(--i);
+}
+.chip.on{background:var(--as);border-color:color-mix(in srgb,var(--a) 40%,var(--b))}
+.banner{
+  margin:0;padding:8px 10px;border-radius:8px;background:var(--as);
+  border:1px solid color-mix(in srgb,var(--a) 30%,var(--b));font-size:12px;color:var(--i);line-height:1.45;
+}
+.menu{
+  position:absolute;z-index:20;min-width:240px;background:var(--s);border:1px solid var(--b);
+  border-radius:12px;box-shadow:0 18px 44px -20px rgba(15,23,42,.45);padding:6px;
+}
+.mi{display:flex;gap:9px;align-items:flex-start;padding:9px 10px;border-radius:8px;font-size:12.5px;color:var(--i)}
+.mi.on,.mi:hover{background:var(--h)}
+.mi b{display:block;font-weight:600}
+.mi span{display:block;font-size:11px;color:var(--m);margin-top:2px;line-height:1.4}
+.sep{height:1px;background:var(--b);margin:4px 6px}
+.k{font-family:var(--mono);font-size:10px;border:1px solid var(--b);border-radius:4px;padding:0 4px;color:var(--m)}
+.sheet-wrap{
+  position:absolute;inset:42px 0 0;background:rgba(15,23,42,.18);
+  display:grid;place-items:start center;padding:28px 16px;z-index:15;overflow:auto;
+}
+.sheet{
+  width:min(460px,100%);background:var(--s);border:1px solid var(--b);border-radius:14px;
+  padding:16px 16px 14px;box-shadow:0 22px 48px -22px rgba(15,23,42,.4);
+}
+.sheet h2{margin:0 0 4px;font-size:16px;color:var(--i)}
+.sheet>p{margin:0 0 12px;font-size:12.5px;color:var(--m);line-height:1.5}
+.opt{border:1px solid var(--b);border-radius:10px;padding:11px 12px;margin-bottom:8px;display:flex;gap:10px;color:var(--i)}
+.opt.on{border-color:color-mix(in srgb,var(--a) 45%,var(--b));background:var(--as)}
+.opt b{display:block;font-size:13px}
+.opt span{display:block;font-size:11.5px;color:var(--m);margin-top:3px;line-height:1.45}
+.field{margin:10px 0 4px}
+.field label{display:block;font-size:11px;color:var(--m);margin-bottom:4px}
+.inp{
+  height:34px;border:1px solid var(--b);border-radius:8px;background:var(--h);
+  display:flex;align-items:center;padding:0 10px;font-size:12.5px;color:var(--i);
+}
+.actions{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+.rel{position:relative}
+.tiny{font-family:var(--mono);font-size:10.5px;color:var(--m)}
+.thread{max-width:700px;margin:0 auto;display:grid;gap:12px}
+.bubble{border:1px solid var(--b);background:var(--s);border-radius:10px;padding:10px 12px;font-size:13px;line-height:1.55;color:var(--i)}
+.bubble.me{background:var(--as)}
+.who{font-family:var(--mono);font-size:10.5px;color:var(--m);margin-bottom:4px}
+.tool{font-size:11.5px;border:1px solid var(--b);border-radius:8px;padding:8px 10px;background:var(--h);margin:6px 0;font-family:var(--mono);color:var(--m)}
+.scene-only{display:none !important}
+.frame[data-scene="temp"] .s-temp,
+.frame[data-scene="normal"] .s-normal,
+.frame[data-scene="project"] .s-project{display:block !important}
+.frame[data-scene="temp"] .row.s-temp,
+.frame[data-scene="normal"] .row.s-normal,
+.frame[data-scene="project"] .row.s-project,
+.frame[data-scene="temp"] .mi.s-temp,
+.frame[data-scene="normal"] .mi.s-normal,
+.frame[data-scene="project"] .mi.s-project{display:flex !important}
+.frame[data-scene="project"] .pg.s-project{display:block !important}
+.frame[data-scene="temp"] p.s-temp,
+.frame[data-scene="normal"] p.s-normal,
+.frame[data-scene="project"] p.s-project,
+.frame[data-scene="temp"] .hint.s-temp,
+.frame[data-scene="normal"] .hint.s-normal,
+.frame[data-scene="project"] .hint.s-project{display:block !important}
+.frame[data-scene="temp"] span.s-temp,
+.frame[data-scene="normal"] span.s-normal,
+.frame[data-scene="project"] span.s-project{display:inline !important}
+.frame[data-scene="temp"] .main.s-temp,
+.frame[data-scene="normal"] .main.s-normal,
+.frame[data-scene="project"] .main.s-project{display:grid !important}
+.frame[data-scene="temp"] .hot-temp,
+.frame[data-scene="normal"] .hot-normal,
+.frame[data-scene="project"] .hot-project{outline:2px solid var(--a);outline-offset:1px;box-shadow:0 0 0 3px color-mix(in srgb,var(--a) 18%,transparent)}
+.frame[data-scene="temp"] .on-temp,
+.frame[data-scene="normal"] .on-normal,
+.frame[data-scene="project"] .on-project{background:var(--as)}
+.frame[data-scene="temp"] .mark-temp,
+.frame[data-scene="normal"] .mark-normal,
+.frame[data-scene="project"] .mark-project{background:var(--as)}
+.frame[data-scene="temp"] .chip-temp,
+.frame[data-scene="normal"] .chip-normal,
+.frame[data-scene="project"] .chip-project{background:var(--as);border-color:color-mix(in srgb,var(--a) 40%,var(--b))}
+.frame[data-scene="temp"] .hide-temp,
+.frame[data-scene="normal"] .hide-normal,
+.frame[data-scene="project"] .hide-project{display:none !important}
+@media(max-width:900px){.thesis .g3{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>新建流程 · 5 版完整设计稿</h1>
+  <p class="lead">
+    每版都是完整 AEI 壳：左轨 + 会话栏（摘要/状态）+ 顶栏 + 主区（控制台或对话）+ Composer。
+    先选版本 A–E，再切三个场景，看入口高亮与创建结果。不是局部线框。
+  </p>
+
+  <div class="thesis">
+    <strong>三种新建（不要混）</strong>
+    <div class="g3">
+      <div class="box"><h3>① 临时会话</h3>默认工作区草稿，不绑项目仓，随手问。可稍后升级到项目。</div>
+      <div class="box"><h3>② 普通会话</h3>挂在某个项目下，agent 以该目录为 cwd。日常主路径。</div>
+      <div class="box"><h3>③ 新建项目</h3>打开/登记本地目录为容器，通常再开会话。不承载聊天。</div>
+    </div>
+    <div class="rec">
+      <b>选型提示：</b>若跟当前 AEI 侧栏一致、少打断 → 优先 <b>A</b> 或 <b>D</b>；侧栏要极简 → <b>B</b>；新手校验多 → <b>C</b>；键盘流 → <b>E</b>。
+      选中后回复字母（如 A），再落地代码。
+    </div>
+  </div>
+
+  <div class="meta-row">
+    <span class="tag hot">完整壳预渲染</span>
+    <span class="tag">3 场景可切换</span>
+    <span class="tag">对齐已落地 AEI</span>
+  </div>
+
+  <div class="picks" id="picks" role="tablist"></div>
+  <div class="scenes" id="scenes"></div>
+  <div class="stage" id="stage"></div>
+  <div class="cap" id="cap"></div>
+</div>
+
+<script>
+const SCENES = [
+  { id: 'temp', label: '① 新增临时会话' },
+  { id: 'normal', label: '② 新增普通会话' },
+  { id: 'project', label: '③ 新增项目' }
+]
+
+function rail() {
+  return `<aside class="rail">
+    <div class="ri on">⌂<b>工作台</b></div>
+    <div class="ri">◷<b>定时</b></div>
+    <div class="ri">▤<b>项目</b></div>
+    <div class="sp"></div>
+    <div class="ri">⚙<b>设置</b></div>
+    <div class="tiny" style="padding:6px 0">0.1.0</div>
+  </aside>`
+}
+
+function composer(ws) {
+  return `<div class="composer"><div class="box">
+    <div class="ph">描述任务，或粘贴报错…</div>
+    <div class="foot">
+      <span class="pill">${ws}</span>
+      <span class="pill">模型 · Auto</span>
+      <span class="pill">每次询问</span>
+      <div class="send">↑</div>
+    </div>
+  </div></div>`
+}
+
+function consoleHome(opts) {
+  const { title, path, banner, ws } = opts
+  return `
+    <div class="hd">
+      <span style="font-weight:600">${title}</span>
+      <span class="path">${path}</span>
+      <div class="g"></div>
+      <span class="pill">⌕</span>
+      <span class="pill">▥</span>
+    </div>
+    <div class="body">
+      <div class="home">
+        ${banner ? `<div class="banner">${banner}</div>` : ''}
+        <h2>选择工作区，开始任务</h2>
+        <p>会话工作台是驾驶舱。左侧完成新建后，这里进入对应上下文；右侧产物栏默认收起。</p>
+        <div class="btn pri" style="width:fit-content">📁 选择一个工作目录</div>
+        <div class="grid3">
+          <div class="card stat"><b>7</b><span>最近会话</span></div>
+          <div class="card stat"><b>1</b><span>进行中</span></div>
+          <div class="card stat"><b>0</b><span>待确认</span></div>
+        </div>
+        <div class="grid2">
+          <div class="card"><h3>最近目录</h3>
+            <div class="item">a3-lib<small>今天</small></div>
+            <div class="item">expert-square<small>2天</small></div>
+            <div class="item">a3-talent-libary<small>上周</small></div>
+          </div>
+          <div class="card"><h3>继续会话</h3>
+            <div class="item">排查网关切流<small>置顶</small></div>
+            <div class="item">新建 utils.ts<small>完成</small></div>
+            <div class="item">本地 proxy<small>异常</small></div>
+          </div>
+        </div>
+        <div class="chips">
+          <span class="chip">项目结构</span>
+          <span class="chip">找 TODO</span>
+          <span class="chip">要改哪些文件</span>
+          <span class="chip">解释报错</span>
+        </div>
+      </div>
+    </div>
+    ${composer(ws)}`
+}
+
+function chatMain(opts) {
+  const { title, path, banner, ws, first } = opts
+  return `
+    <div class="hd">
+      <span style="font-weight:600">${title}</span>
+      <span class="path">${path}</span>
+      <div class="g"></div>
+      <span class="pill">⌕</span>
+      <span class="pill">▥ 产物</span>
+    </div>
+    <div class="body">
+      <div class="thread">
+        ${banner ? `<div class="banner">${banner}</div>` : ''}
+        <div class="bubble me">
+          <div class="who">你 · 刚刚</div>
+          ${first}
+        </div>
+        <div class="bubble">
+          <div class="who">Agent · 思考中</div>
+          好的，我先确认工作区与上下文，再继续。
+          <div class="tool">cwd · ${ws}</div>
+        </div>
+      </div>
+    </div>
+    ${composer(ws)}`
+}
+
+function baseList() {
+  return `
+    <div class="lbl">置顶 <span class="n">2</span></div>
+    <div class="row"><span class="st run">◉</span><div class="t"><div class="title">排查网关切流</div><div class="sum">ALB /uc 核对中</div></div><span class="meta">跑</span></div>
+    <div class="row"><span class="st ok">✓</span><div class="t"><div class="title">字段配置 SQL</div><div class="sum">已生成脚本</div></div><span class="meta">昨天</span></div>
+
+    <div class="lbl">临时会话 <span class="n"><span class="scene-only s-temp">3</span><span class="scene-only s-normal hide-temp">2</span><span class="scene-only s-project hide-temp">2</span></span></div>
+    <div class="row on-temp scene-only s-temp">
+      <span class="dot" style="background:#94a3b8"></span>
+      <div class="t"><div class="title">新临时会话</div><div class="sum">默认区 · 刚刚创建</div></div>
+      <span class="meta">刚刚</span>
+    </div>
+    <div class="row"><span class="dot" style="background:#94a3b8"></span><div class="t"><div class="title">随手问目录</div><div class="sum">未绑仓库</div></div><span class="meta">1时</span></div>
+    <div class="row"><span class="dot" style="background:#94a3b8"></span><div class="t"><div class="title">看一下 package.json</div><div class="sum">临时探查</div></div><span class="meta">3时</span></div>
+
+    <div class="lbl">按项目</div>
+    <div class="pg">
+      <div class="pg-hd"><span class="dot" style="background:#3d8fa3"></span><span class="name">a3-lib</span><span class="meta">4 ▾</span></div>
+      <div class="row on-normal scene-only s-normal">
+        <span class="st">○</span>
+        <div class="t"><div class="title">新普通会话</div><div class="sum">挂在 a3-lib</div></div>
+        <span class="meta">刚刚</span>
+      </div>
+      <div class="row"><span class="st ok">✓</span><div class="t"><div class="title">新建 utils.ts</div><div class="sum">已落盘</div></div><span class="meta">今天</span></div>
+      <div class="row"><span class="st err">!</span><div class="t"><div class="title">本地 proxy</div><div class="sum">异常 · 待处理</div></div><span class="meta">2时</span></div>
+      <div class="row"><span class="st">○</span><div class="t"><div class="title">切流验收清单</div><div class="sum">草稿</div></div><span class="meta">昨</span></div>
+    </div>
+    <div class="pg">
+      <div class="pg-hd"><span class="dot" style="background:#c4a574"></span><span class="name">a3-expert-square</span><span class="meta">2 ▸</span></div>
+    </div>
+    <div class="pg scene-only s-project">
+      <div class="pg-hd mark">
+        <span class="dot" style="background:#8a6d4a"></span>
+        <span class="name">新项目（刚登记）</span>
+        <span class="meta">✓</span>
+      </div>
+    </div>`
+}
+
+function shellA() {
+  const side = `
+    <div class="side-top">
+      <div class="btn accent block hot-temp">⚡ 临时会话</div>
+      <div class="btn pri block hot-normal">＋ 普通会话</div>
+      <div class="btn ghost block hot-project">📁 新建项目</div>
+      <p class="hint" style="padding:2px 0 4px">
+        <span class="scene-only s-temp">一键落入默认区，无需选目录。</span>
+        <span class="scene-only s-normal">未选项目时先选目录，再创建会话。</span>
+        <span class="scene-only s-project">打开本地目录并登记为项目容器。</span>
+      </p>
+    </div>
+    <div class="search">⌕ 搜索会话 / 总结</div>
+    <div class="side-scroll">${baseList()}</div>`
+
+  const mainTemp = chatMain({
+    title: '新临时会话',
+    path: '临时 / 默认区',
+    banner: '已创建临时会话，落在默认工作区。可随时「升级到项目」。',
+    ws: '临时 / 默认区',
+    first: '帮我快速看一下这个目录结构。'
+  })
+  const mainNormal = chatMain({
+    title: '新普通会话',
+    path: 'a3-lib',
+    banner: '已在 a3-lib 下创建普通会话。agent cwd = 该项目目录。',
+    ws: 'a3-lib',
+    first: '在 a3-lib 里找一下 proxy 相关配置。'
+  })
+  const mainProject = consoleHome({
+    title: '项目已添加',
+    path: '容器就绪 · 可再建普通会话',
+    banner: '已登记新项目。下一步：在项目行点 ＋ 开普通会话。',
+    ws: '未选目录'
+  })
+
+  return `<div class="app">${rail()}
+    <aside class="side">${side}</aside>
+    <section class="main scene-only s-temp">${mainTemp}</section>
+    <section class="main scene-only s-normal">${mainNormal}</section>
+    <section class="main scene-only s-project">${mainProject}</section>
+  </div>`
+}
+
+function shellB() {
+  const side = `
+    <div class="side-top rel">
+      <div class="btn pri block hot">＋ 新建</div>
+      <div class="menu" style="top:44px;left:0;right:0">
+        <div class="mi on-temp"><span>⚡</span><div><b>临时会话</b><span>默认区草稿 · <span class="k">⌘⇧T</span></span></div></div>
+        <div class="mi on-normal"><span>💬</span><div><b>普通会话</b><span>选项目后创建 · <span class="k">⌘N</span></span></div></div>
+        <div class="sep"></div>
+        <div class="mi on-project"><span>📁</span><div><b>新建项目</b><span>打开本地目录作为容器</span></div></div>
+      </div>
+    </div>
+    <p class="hint">菜单始终三项；危险操作不进此菜单。</p>
+    <div class="search">⌕ 搜索会话 / 总结</div>
+    <div class="side-scroll">${baseList()}</div>`
+
+  return `<div class="app">${rail()}
+    <aside class="side">${side}</aside>
+    <section class="main">${consoleHome({
+      title: '工作台',
+      path: '用「＋ 新建」选择类型',
+      banner: '<span class="scene-only s-temp">菜单选中：临时会话</span><span class="scene-only s-normal">菜单选中：普通会话</span><span class="scene-only s-project">菜单选中：新建项目</span>',
+      ws: '—'
+    })}</section>
+  </div>`
+}
+
+function shellC() {
+  const side = `
+    <div class="side-top"><div class="btn block hot">＋ 新建…</div></div>
+    <div class="search">⌕ 搜索会话 / 总结</div>
+    <div class="side-scroll">${baseList()}</div>`
+
+  const sheet = `
+    <div class="sheet-wrap">
+      <div class="sheet">
+        <h2>
+          <span class="scene-only s-temp">新建临时会话</span>
+          <span class="scene-only s-normal">新建普通会话</span>
+          <span class="scene-only s-project">新建项目</span>
+        </h2>
+        <p>
+          <span class="scene-only s-temp">落在默认工作区，不绑定项目仓。</span>
+          <span class="scene-only s-normal">将挂到所选项目下，agent 以该目录为 cwd。</span>
+          <span class="scene-only s-project">选择本地目录；登记后可在此开会话。</span>
+        </p>
+        <div class="opt on-temp"><span>⚡</span><div><b>临时会话</b><span>默认区 · 可稍后升级到项目</span></div></div>
+        <div class="opt on-normal"><span>💬</span><div><b>普通会话</b><span>必须选择或确认项目</span></div></div>
+        <div class="opt on-project"><span>📁</span><div><b>新建项目</b><span>浏览本地文件夹</span></div></div>
+        <div class="field hide-temp">
+          <label><span class="scene-only s-normal">所属项目</span><span class="scene-only s-project">目录路径</span></label>
+          <div class="inp">
+            <span class="scene-only s-normal">a3-lib ▾</span>
+            <span class="scene-only s-project">D:\\work\\code\\shudao\\…</span>
+          </div>
+        </div>
+        <div class="actions">
+          <div class="btn ghost">取消</div>
+          <div class="btn pri">
+            <span class="scene-only s-temp">创建</span>
+            <span class="scene-only s-normal">创建</span>
+            <span class="scene-only s-project">打开并登记</span>
+          </div>
+        </div>
+      </div>
+    </div>`
+
+  return `<div class="app">${rail()}
+    <aside class="side">${side}</aside>
+    <section class="main">
+      <div class="hd">
+        <span style="font-weight:600">工作台</span>
+        <span class="path">新建向导打开中</span>
+        <div class="g"></div>
+        <span class="tiny">Esc 关闭</span>
+      </div>
+      <div class="body" style="filter:blur(1px);opacity:.45;pointer-events:none">
+        <div class="home">
+          <h2>选择工作区，开始任务</h2>
+          <p>背景控制台保持完整，向导叠在上面。</p>
+          <div class="grid3">
+            <div class="card stat"><b>7</b><span>最近会话</span></div>
+            <div class="card stat"><b>1</b><span>进行中</span></div>
+            <div class="card stat"><b>0</b><span>待确认</span></div>
+          </div>
+        </div>
+      </div>
+      ${composer('—')}
+      ${sheet}
+    </section>
+  </div>`
+}
+
+function shellD() {
+  const side = `
+    <div class="side-top"><div class="btn ghost block">打开目录</div></div>
+    <div class="search">⌕ 搜索会话 / 总结</div>
+    <div class="side-scroll">
+      <div class="lbl">置顶 <span class="n">1</span></div>
+      <div class="row"><span class="st run">◉</span><div class="t"><div class="title">排查网关切流</div><div class="sum">置顶</div></div><span class="meta">跑</span></div>
+
+      <div class="lbl">会话 <span class="n">临时</span></div>
+      <div class="row on-temp scene-only s-temp">
+        <span class="dot" style="background:#94a3b8"></span>
+        <div class="t"><div class="title">新临时会话</div><div class="sum">刚刚</div></div>
+        <span class="meta">刚刚</span>
+      </div>
+      <p class="hint mark hide-temp">暂无临时对话 · <b style="color:var(--a)">＋ 新建临时</b></p>
+      <div class="row"><span class="dot" style="background:#94a3b8"></span><div class="t"><div class="title">随手问目录</div><div class="sum">未绑仓库</div></div><span class="meta">1时</span></div>
+
+      <div class="lbl">项目</div>
+      <div class="pg">
+        <div class="pg-hd mark-normal">
+          <span class="dot" style="background:#3d8fa3"></span>
+          <span class="name">a3-lib</span>
+          <span class="meta">…</span>
+          <span class="btn mini hot-normal">＋</span>
+        </div>
+        <div class="row on-normal scene-only s-normal">
+          <span class="st">○</span>
+          <div class="t"><div class="title">新普通会话</div><div class="sum">行内 ＋ 创建</div></div>
+          <span class="meta">刚刚</span>
+        </div>
+        <div class="row"><span class="st ok">✓</span><div class="t"><div class="title">新建 utils.ts</div><div class="sum">已落盘</div></div><span class="meta">今天</span></div>
+        <div class="row"><span class="st err">!</span><div class="t"><div class="title">本地 proxy</div><div class="sum">异常</div></div><span class="meta">2时</span></div>
+      </div>
+      <div class="pg">
+        <div class="pg-hd">
+          <span class="dot" style="background:#c4a574"></span>
+          <span class="name">expert-square</span>
+          <span class="meta">▸</span>
+          <span class="btn mini">＋</span>
+        </div>
+      </div>
+      <div style="padding:8px 12px 14px">
+        <div class="btn ghost block hot-project">📁 新建项目</div>
+      </div>
+      <div class="pg scene-only s-project">
+        <div class="pg-hd mark">
+          <span class="dot" style="background:#8a6d4a"></span>
+          <span class="name">新项目</span>
+          <span class="meta">刚加</span>
+        </div>
+      </div>
+    </div>`
+
+  return `<div class="app">${rail()}
+    <aside class="side">${side}</aside>
+    <section class="main scene-only s-temp">${chatMain({
+      title: '临时会话',
+      path: '入口在「会话」段',
+      banner: '从「会话」段空态创建临时会话',
+      ws: '临时 / 默认区',
+      first: '随便问问目录里有什么。'
+    })}</section>
+    <section class="main scene-only s-normal">${chatMain({
+      title: 'a3-lib · 新会话',
+      path: '行内 ＋',
+      banner: '从 a3-lib 行内 ＋ 创建普通会话',
+      ws: 'a3-lib',
+      first: '继续排查本地 proxy。'
+    })}</section>
+    <section class="main scene-only s-project">${consoleHome({
+      title: '项目中心',
+      path: '从项目段底部登记',
+      banner: '从项目段底部「新建项目」登记目录',
+      ws: '未选目录'
+    })}</section>
+  </div>`
+}
+
+function shellE() {
+  const side = `
+    <div class="lbl">活跃</div>
+    <div class="side-scroll">
+      <div class="row on"><div class="t"><div class="title">切流</div><div class="sum">a3-lib · ALB 核对</div></div><span class="meta">◉</span></div>
+      <div class="row"><div class="t"><div class="title">proxy</div><div class="sum">a3-lib · 异常</div></div><span class="meta">!</span></div>
+      <div class="row"><div class="t"><div class="title">utils</div><div class="sum">a3-lib · 完成</div></div><span class="meta">✓</span></div>
+      <p class="hint">侧栏不放新建按钮。用 <span class="k">⌘N</span> 或输入区上方 chip。</p>
+      <div class="lbl">项目</div>
+      <div class="row"><span class="dot" style="background:#3d8fa3"></span><div class="t"><div class="title">a3-lib</div><div class="sum">4 会话</div></div></div>
+      <div class="row"><span class="dot" style="background:#c4a574"></span><div class="t"><div class="title">expert-square</div><div class="sum">2 会话</div></div></div>
+      <div class="row scene-only s-project mark-project"><span class="dot" style="background:#8a6d4a"></span><div class="t"><div class="title">新项目</div><div class="sum">刚登记</div></div></div>
+      <div class="lbl">刚创建</div>
+      <div class="row on-temp scene-only s-temp"><span class="dot" style="background:#94a3b8"></span><div class="t"><div class="title">新临时会话</div><div class="sum">⌘N</div></div><span class="meta">刚刚</span></div>
+      <div class="row on-normal scene-only s-normal"><span class="st">○</span><div class="t"><div class="title">新普通会话</div><div class="sum">a3-lib</div></div><span class="meta">刚刚</span></div>
+    </div>`
+
+  return `<div class="app">${rail()}
+    <aside class="side">${side}</aside>
+    <section class="main">
+      <div class="hd rel">
+        <span style="font-weight:600">工作台</span>
+        <span class="path">a3-lib</span>
+        <div class="g"></div>
+        <span class="k">⌘N</span>
+        <div class="menu" style="right:12px;top:40px;width:260px">
+          <div class="tiny" style="padding:4px 10px">新建</div>
+          <div class="mi on-temp"><span>⚡</span><div><b>临时会话</b><span>默认区</span></div></div>
+          <div class="mi on-normal"><span>💬</span><div><b>普通会话</b><span>当前项目或另选</span></div></div>
+          <div class="mi on-project"><span>📁</span><div><b>新建项目</b><span>打开目录</span></div></div>
+        </div>
+      </div>
+      <div class="body">
+        <div class="home">
+          <div class="banner">
+            <span class="scene-only s-temp">⌘N → 临时会话已创建</span>
+            <span class="scene-only s-normal">⌘N → 普通会话（a3-lib）</span>
+            <span class="scene-only s-project">⌘N → 请选择目录登记项目</span>
+          </div>
+          <h2>
+            <span class="scene-only s-temp">会话已就绪</span>
+            <span class="scene-only s-normal">会话已就绪</span>
+            <span class="scene-only s-project">登记项目目录</span>
+          </h2>
+          <p>创建路径以键盘与 Composer 为主；侧栏保持浏览。</p>
+          <div class="grid2">
+            <div class="card"><h3>最近目录</h3>
+              <div class="item">a3-lib<small>今天</small></div>
+              <div class="item">expert-square<small>2天</small></div>
+            </div>
+            <div class="card"><h3>继续会话</h3>
+              <div class="item">排查网关切流<small>置顶</small></div>
+              <div class="item">utils.ts<small>完成</small></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="chips" style="padding:0 14px 8px">
+          <span class="chip chip-temp">⚡ 临时会话</span>
+          <span class="chip chip-normal">💬 普通会话</span>
+          <span class="chip chip-project">📁 新建项目</span>
+          <span class="tiny" style="align-self:center">或 ⌘N</span>
+        </div>
+        ${composer('<span class="scene-only s-temp">临时 / 默认区</span><span class="scene-only s-normal">a3-lib</span><span class="scene-only s-project">未选目录</span>')}
+      </div>
+    </section>
+  </div>`
+}
+
+const VERSIONS = [
+  {
+    id: 'A', name: 'A · 三按钮并列（推荐）',
+    cap: '侧栏顶：临时会话 / 普通会话 / 新建项目 三个按钮。场景高亮对应按钮；临时/普通进对话，新建项目回控制台。',
+    pros: ['意图一眼清', '少一步', '贴现状'], cons: ['顶区略高'],
+    html: shellA
+  },
+  {
+    id: 'B', name: 'B · 单一「＋」菜单',
+    cap: '只留「＋ 新建」，菜单三项带说明与快捷键。侧栏更干净，多一次点击。',
+    pros: ['顶区极简'], cons: ['多一次点击'],
+    html: shellB
+  },
+  {
+    id: 'C', name: 'C · 新建向导卡片',
+    cap: '中间遮罩 + 向导卡：先选类型，再填项目/路径。三种场景共用一张卡，背景控制台完整可见。',
+    pros: ['新手稳', '可校验'], cons: ['打断流'],
+    html: shellC
+  },
+  {
+    id: 'D', name: 'D · 项目行内 ＋（PI 味）',
+    cap: '临时在「会话」段；普通在项目行 ＋；新建项目在项目段底部。入口跟层级走。',
+    pros: ['上下文准'], cons: ['入口分散'],
+    html: shellD
+  },
+  {
+    id: 'E', name: 'E · ⌘N + Composer chip',
+    cap: '侧栏几乎不放新建；⌘N 菜单 + 输入区上方三枚 chip。给键盘流。',
+    pros: ['侧栏干净', '键盘快'], cons: ['可发现性弱'],
+    html: shellE
+  }
+]
+
+let verId = 'A'
+let sceneId = 'temp'
+const picks = document.getElementById('picks')
+const scenesEl = document.getElementById('scenes')
+const stage = document.getElementById('stage')
+const cap = document.getElementById('cap')
+
+VERSIONS.forEach((v, i) => {
+  const b = document.createElement('button')
+  b.type = 'button'
+  b.textContent = v.name
+  b.setAttribute('aria-selected', i === 0 ? 'true' : 'false')
+  b.setAttribute('role', 'tab')
+  b.onclick = () => { verId = v.id; paint() }
+  picks.appendChild(b)
+
+  const frame = document.createElement('div')
+  frame.className = 'frame' + (i === 0 ? ' on' : '')
+  frame.id = 'frame-' + v.id
+  frame.dataset.scene = sceneId
+  frame.innerHTML = v.html()
+  stage.appendChild(frame)
+})
+
+SCENES.forEach((s, i) => {
+  const b = document.createElement('button')
+  b.type = 'button'
+  b.textContent = s.label
+  b.setAttribute('aria-selected', i === 0 ? 'true' : 'false')
+  b.onclick = () => { sceneId = s.id; paint() }
+  scenesEl.appendChild(b)
+})
+
+function paint() {
+  ;[...picks.children].forEach((b, i) => {
+    b.setAttribute('aria-selected', VERSIONS[i].id === verId ? 'true' : 'false')
+  })
+  ;[...scenesEl.children].forEach((b, i) => {
+    b.setAttribute('aria-selected', SCENES[i].id === sceneId ? 'true' : 'false')
+  })
+  VERSIONS.forEach(v => {
+    const frame = document.getElementById('frame-' + v.id)
+    frame.classList.toggle('on', v.id === verId)
+    frame.dataset.scene = sceneId
+  })
+  const v = VERSIONS.find(x => x.id === verId)
+  const sceneLabel = SCENES.find(s => s.id === sceneId).label
+  cap.innerHTML = `<b>${v.name}</b> · ${sceneLabel}<br>${v.cap}<div class="tags">${
+    v.pros.map(p => `<span class="ptag">✓ ${p}</span>`).join('')
+  }${v.cons.map(c => `<span class="ctag">△ ${c}</span>`).join('')}</div>`
+}
+
+paint()
+</script>
+</body>
+</html>

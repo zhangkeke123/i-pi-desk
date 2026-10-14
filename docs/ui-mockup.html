@@ -1,0 +1,1075 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="midnight">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!--
+  与产品同步：配色、字体、圆角已对齐 v2（见 docs/UI-DESIGN.md §12）。
+  结构与交互仍是 v1 原型的（八种状态 + 组件规格），照旧可以切五套主题、点审批。
+-->
+<title>i-pi-desk · 界面与交互设计原型</title>
+    <!--
+      这是**设计原型**，不是实现。目的：在动代码之前，把「完整的界面与交互」摆出来用手感判断。
+      它刻意复用 apps/desktop/src/styles.css 里的真实设计令牌，所以配色/圆角/字号与真机一致。
+      单文件、零依赖 —— 双击即可打开。
+    -->
+    <style>
+      /* ── 设计令牌：与 src/styles.css 保持一致（这里只抄配色与形状，语法高亮略） ── */
+      :root, :root[data-theme='midnight'] {
+        color-scheme: dark;
+        --c-canvas: oklch(0.165 0.006 70); --c-surface: oklch(0.206 0.007 70);
+        --c-surface-2: oklch(0.246 0.008 70); --c-surface-3: oklch(0.291 0.009 70);
+        --c-border: oklch(1 0 0 / 0.13); --c-border-strong: oklch(1 0 0 / 0.26);
+        --c-ink: oklch(0.938 0.012 85); --c-ink-soft: oklch(0.82 0.013 85); --c-muted: oklch(0.664 0.015 80);
+        --c-accent: oklch(0.72 0.128 62); --c-accent-soft: oklch(0.279 0.042 62); --c-accent-ink: oklch(0.17 0.03 62);
+        --c-danger: oklch(0.652 0.16 28); --c-danger-soft: oklch(0.28 0.058 28);
+        --c-warn: oklch(0.8 0.12 80); --c-warn-soft: oklch(0.3 0.048 80);
+        --c-ok: oklch(0.72 0.11 150); --c-ok-soft: oklch(0.28 0.048 150);
+        --c-overlay: oklch(0.09 0.006 70 / 0.64); --c-sidebar: oklch(0.182 0.006 70);
+        /* v2 新增：行动色。主按钮不用强调色，靠明度对比表达（见 UI-DESIGN §12.2） */
+        --c-action: oklch(0.93 0.008 85); --c-action-hover: oklch(0.97 0.008 85); --c-action-ink: oklch(0.18 0.012 70);
+        --radius: 5px; --shadow-sm: 0 1px 0 oklch(0 0 0 / .28);
+        --shadow-md: 0 2px 6px -2px oklch(0 0 0 / .34); --shadow-lg: 0 14px 34px -18px oklch(0 0 0 / .55);
+      }
+      :root[data-theme='graphite'] {
+        color-scheme: dark;
+        --c-canvas: oklch(0.168 0.002 90); --c-surface: oklch(0.208 0.002 90);
+        --c-surface-2: oklch(0.248 0.003 90); --c-surface-3: oklch(0.288 0.003 90);
+        --c-border: oklch(1 0 0 / 0.14); --c-border-strong: oklch(1 0 0 / 0.28);
+        --c-ink: oklch(0.93 0.004 90); --c-ink-soft: oklch(0.8 0.004 90); --c-muted: oklch(0.64 0.005 90);
+        --c-accent: oklch(0.74 0.1 110); --c-accent-soft: oklch(0.28 0.035 110); --c-accent-ink: oklch(0.17 0.025 110);
+        --c-danger: oklch(0.652 0.16 28); --c-danger-soft: oklch(0.28 0.058 28);
+        --c-warn: oklch(0.8 0.12 80); --c-warn-soft: oklch(0.3 0.048 80);
+        --c-ok: oklch(0.72 0.11 150); --c-ok-soft: oklch(0.28 0.048 150);
+        --c-overlay: oklch(0.1 0.002 90 / 0.66); --c-sidebar: oklch(0.186 0.002 90);
+        --c-action: oklch(0.93 0.004 90); --c-action-hover: oklch(0.97 0.004 90); --c-action-ink: oklch(0.18 0.004 90);
+        --radius: 4px; --shadow-md: 0 2px 4px -2px oklch(0 0 0 / .4);
+      }
+      :root[data-theme='daylight'] {
+        color-scheme: light;
+        --c-canvas: oklch(0.975 0.006 85); --c-surface: oklch(0.998 0.003 85);
+        --c-surface-2: oklch(0.962 0.007 85); --c-surface-3: oklch(0.935 0.009 85);
+        --c-border: oklch(0.9 0.01 85); --c-border-strong: oklch(0.82 0.014 85);
+        --c-ink: oklch(0.235 0.014 70); --c-ink-soft: oklch(0.37 0.015 70); --c-muted: oklch(0.53 0.016 75);
+        --c-accent: oklch(0.52 0.115 55); --c-accent-soft: oklch(0.945 0.028 62); --c-accent-ink: oklch(0.99 0.006 62);
+        --c-danger: oklch(0.53 0.17 28); --c-danger-soft: oklch(0.95 0.028 28);
+        --c-warn: oklch(0.62 0.12 70); --c-warn-soft: oklch(0.96 0.035 80);
+        --c-ok: oklch(0.52 0.1 150); --c-ok-soft: oklch(0.95 0.026 150);
+        --c-overlay: oklch(0.32 0.014 70 / 0.36); --c-sidebar: oklch(0.955 0.008 85);
+        --c-action: oklch(0.3 0.014 70); --c-action-hover: oklch(0.24 0.014 70); --c-action-ink: oklch(0.99 0.004 85);
+        --shadow-sm: 0 1px 0 oklch(0.5 0.02 70 / .12); --shadow-md: 0 2px 6px -2px oklch(0.5 0.02 70 / .16);
+        --shadow-lg: 0 16px 40px -18px oklch(0.5 0.02 70 / .26);
+      }
+      :root[data-theme='paper'] {
+        color-scheme: light;
+        --c-canvas: oklch(0.955 0.018 85); --c-surface: oklch(0.988 0.01 85);
+        --c-surface-2: oklch(0.94 0.02 85); --c-surface-3: oklch(0.912 0.024 85);
+        --c-border: oklch(0.878 0.026 85); --c-border-strong: oklch(0.8 0.032 82);
+        --c-ink: oklch(0.26 0.022 62); --c-ink-soft: oklch(0.39 0.026 62); --c-muted: oklch(0.52 0.03 70);
+        --c-accent: oklch(0.5 0.115 48); --c-accent-soft: oklch(0.925 0.035 60); --c-accent-ink: oklch(0.99 0.008 60);
+        --c-danger: oklch(0.5 0.16 28); --c-danger-soft: oklch(0.935 0.028 28);
+        --c-warn: oklch(0.58 0.115 68); --c-warn-soft: oklch(0.945 0.035 80);
+        --c-ok: oklch(0.5 0.095 148); --c-ok-soft: oklch(0.935 0.026 148);
+        --c-overlay: oklch(0.36 0.024 62 / 0.36); --c-sidebar: oklch(0.932 0.022 85);
+        --c-action: oklch(0.32 0.016 62); --c-action-hover: oklch(0.26 0.016 62); --c-action-ink: oklch(0.99 0.006 85);
+        --shadow-sm: 0 1px 0 oklch(0.42 0.03 62 / .14); --shadow-md: 0 2px 6px -2px oklch(0.42 0.03 62 / .18);
+        --shadow-lg: 0 16px 40px -18px oklch(0.42 0.03 62 / .28);
+      }
+      :root[data-theme='contrast'] {
+        color-scheme: dark;
+        --c-canvas: oklch(0 0 0); --c-surface: oklch(0.14 0 0);
+        --c-surface-2: oklch(0.22 0 0); --c-surface-3: oklch(0.3 0 0);
+        --c-border: oklch(1 0 0 / 0.32); --c-border-strong: oklch(1 0 0 / 0.5);
+        --c-ink: oklch(1 0 0); --c-ink-soft: oklch(0.92 0 0); --c-muted: oklch(0.82 0 0);
+        --c-accent: oklch(0.88 0.17 90); --c-accent-soft: oklch(0.32 0.075 90); --c-accent-ink: oklch(0.1 0.02 90);
+        --c-danger: oklch(0.72 0.2 25); --c-danger-soft: oklch(0.3 0.1 25);
+        --c-warn: oklch(0.88 0.15 85); --c-warn-soft: oklch(0.32 0.075 85);
+        --c-ok: oklch(0.85 0.16 155); --c-ok-soft: oklch(0.3 0.08 155);
+        --c-overlay: oklch(0 0 0 / .8); --c-sidebar: oklch(0.1 0 0);
+        --c-action: oklch(1 0 0); --c-action-hover: oklch(0.94 0 0); --c-action-ink: oklch(0 0 0);
+        --radius: 2px;
+      }
+
+      * { box-sizing: border-box; }
+      html, body { height: 100%; margin: 0; }
+      body {
+        background: var(--c-canvas); color: var(--c-ink);
+        font-family: 'Geist Variable', 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+        font-size: 13px; line-height: 1.55; -webkit-font-smoothing: antialiased;
+        font-variant-numeric: tabular-nums;
+        display: flex; flex-direction: column;
+        transition: background-color .18s, color .18s;
+      }
+      .mono { font-family: 'JetBrains Mono Variable', 'JetBrains Mono', Consolas, monospace; }
+      h1, h2, h3, p { margin: 0; }
+
+      /* ── 原型自己的外壳（不是产品的一部分） ── */
+      .proto-bar {
+        display: flex; align-items: center; gap: 12px; padding: 8px 12px;
+        border-bottom: 1px solid var(--c-border); background: var(--c-surface-2); flex: none;
+        flex-wrap: wrap;
+      }
+      .proto-title { font-weight: 600; font-size: 12px; letter-spacing: .02em; }
+      .proto-note { font-size: 11px; color: var(--c-muted); }
+      .proto-screens { display: flex; gap: 4px; flex-wrap: wrap; margin-left: auto; }
+      .theme-row { display: flex; gap: 4px; }
+      @media (max-width: 1100px) { .proto-screens { margin-left: 0; } }
+
+      .stage { flex: 1; min-height: 0; display: flex; }
+      .rail {
+        width: 208px; flex: none; border-right: 1px solid var(--c-border);
+        background: var(--c-surface); padding: 10px 8px; overflow-y: auto;
+      }
+      .rail-title {
+        font-size: 11px; text-transform: uppercase; letter-spacing: .06em;
+        color: var(--c-muted); padding: 4px 6px;
+      }
+      .rail button {
+        display: block; width: 100%; text-align: left; padding: 7px 9px; margin-bottom: 2px;
+        border: 1px solid transparent; border-radius: calc(var(--radius) - 4px);
+        background: transparent; color: var(--c-ink-soft); font: inherit; font-size: 12px; cursor: pointer;
+      }
+      .rail button:hover { background: var(--c-surface-2); color: var(--c-ink); }
+      .rail button[aria-selected='true'] {
+        background: var(--c-accent-soft); color: var(--c-accent);
+        border-color: color-mix(in oklch, var(--c-accent) 35%, transparent);
+      }
+      .rail .hint { font-size: 11px; color: var(--c-muted); padding: 0 6px 8px; line-height: 1.5; }
+      .canvas { flex: 1; min-width: 0; overflow: auto; padding: 18px; }
+      .screen { display: none; }
+      .screen[data-active='true'] { display: block; }
+      .screen-head { margin-bottom: 14px; max-width: 760px; }
+      .screen-head h1 { font-size: 17px; font-weight: 600; letter-spacing: -.01em; }
+      .screen-head .q { color: var(--c-muted); font-size: 12px; margin-top: 3px; }
+      .screen-body {
+        max-width: 760px; border: 1px solid var(--c-border); border-radius: var(--radius);
+        background: var(--c-surface); box-shadow: var(--shadow-sm); overflow: hidden;
+      }
+      .screen-body.pad { padding: 14px; }
+      .lede { font-size: 12px; color: var(--c-muted); margin-bottom: 10px; }
+
+      /* ── 组件（与真实实现同名同形） ── */
+      .btn {
+        display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+        height: 30px; padding: 0 10px; border-radius: calc(var(--radius) - 2px);
+        border: 1px solid transparent; font: inherit; font-size: 12px; font-weight: 500;
+        color: var(--c-ink-soft); background: transparent; cursor: pointer;
+        transition: background-color .12s, color .12s, border-color .12s;
+      }
+      .btn:hover:not(:disabled) { background: var(--c-surface-2); color: var(--c-ink); }
+      .btn:disabled { opacity: .45; cursor: not-allowed; }
+      .btn-primary {
+        /* v2：主行动不用强调色（见 UI-DESIGN §12.2） */
+        background: var(--c-action); color: var(--c-action-ink);
+        border-color: color-mix(in oklch, var(--c-accent) 80%, black); box-shadow: var(--shadow-sm);
+      }
+      .btn-primary:hover:not(:disabled) { filter: brightness(1.08); }
+      .btn-outline { border-color: var(--c-border-strong); background: var(--c-surface); color: var(--c-ink); }
+      .btn-outline:hover:not(:disabled) { background: var(--c-surface-2); }
+      .btn-danger { background: var(--c-danger); color: var(--c-accent-ink); }
+      .btn-sm { height: 24px; padding: 0 8px; font-size: 11px; }
+      .chip {
+        display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 8px;
+        border-radius: 999px; border: 1px solid var(--c-border); background: var(--c-surface-2);
+        color: var(--c-muted); font-size: 11px; white-space: nowrap;
+      }
+      .chip-accent { border-color: color-mix(in oklch, var(--c-accent) 35%, transparent); background: var(--c-accent-soft); color: var(--c-accent); }
+      .chip-ok { border-color: color-mix(in oklch, var(--c-ok) 30%, transparent); background: var(--c-ok-soft); color: var(--c-ok); }
+      .chip-warn { border-color: color-mix(in oklch, var(--c-warn) 35%, transparent); background: var(--c-warn-soft); color: var(--c-warn); }
+      .chip-danger { border-color: color-mix(in oklch, var(--c-danger) 35%, transparent); background: var(--c-danger-soft); color: var(--c-danger); }
+      .field {
+        width: 100%; height: 30px; padding: 0 10px; border-radius: calc(var(--radius) - 2px);
+        border: 1px solid var(--c-border); background: var(--c-surface-2); color: var(--c-ink);
+        font: inherit; font-size: 12px;
+      }
+      .field::placeholder { color: var(--c-muted); }
+      .kbd {
+        display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 4px;
+        border: 1px solid var(--c-border-strong); border-bottom-width: 2px;
+        border-radius: calc(var(--radius) - 6px); background: var(--c-surface-2);
+        color: var(--c-ink-soft); font-size: 10.5px; line-height: 1;
+      }
+
+      /* ── 应用外壳（原型里只做静态展示，重点是主区各状态） ── */
+      .app { display: flex; min-height: 460px; background: var(--c-canvas); }
+      .aside {
+        width: 236px; flex: none; background: var(--c-sidebar);
+        border-right: 1px solid var(--c-border); padding: 10px 8px; display: flex; flex-direction: column; gap: 8px;
+      }
+      .brand { display: flex; align-items: center; gap: 8px; padding: 2px 4px 6px; }
+      .brand .tile {
+        width: 24px; height: 24px; border-radius: calc(var(--radius) - 4px);
+        background: var(--c-accent-soft); color: var(--c-accent); display: grid; place-items: center; font-size: 13px;
+      }
+      .brand b { font-size: 13px; letter-spacing: -.01em; }
+      .ws {
+        display: flex; align-items: center; gap: 8px; padding: 6px 8px; font-size: 12px;
+        border: 1px solid var(--c-border); border-radius: calc(var(--radius) - 2px); background: var(--c-surface);
+      }
+      .ws .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .sessions { flex: 1; min-height: 0; overflow: hidden; }
+      .sess {
+        display: flex; align-items: center; gap: 8px; padding: 6px 9px; border-radius: calc(var(--radius) - 2px);
+        font-size: 12px; color: var(--c-muted); position: relative;
+      }
+      .sess[data-active='true'] { background: var(--c-accent-soft); color: var(--c-ink); }
+      .sess[data-active='true']::before {
+        content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+        width: 3px; height: 16px; border-radius: 999px; background: var(--c-accent);
+      }
+      .main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+      .topbar {
+        display: flex; align-items: center; gap: 8px; height: 44px; padding: 0 10px;
+        border-bottom: 1px solid var(--c-border); background: var(--c-surface); flex: none;
+      }
+      .topbar .wsname { font-weight: 500; font-size: 13px; }
+      .topbar .wspath { color: var(--c-muted); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .topbar .icons { margin-left: auto; display: flex; align-items: center; gap: 2px; }
+      .icon {
+        width: 26px; height: 26px; display: grid; place-items: center; border-radius: calc(var(--radius) - 4px);
+        color: var(--c-muted); font-size: 13px; cursor: pointer;
+      }
+      .icon:hover { background: var(--c-surface-2); color: var(--c-ink); }
+      .icon[data-active='true'] { background: var(--c-accent-soft); color: var(--c-accent); }
+      .stream { flex: 1; min-height: 0; overflow: auto; padding: 14px; }
+      .col { max-width: 620px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+
+      .role { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--c-muted); margin-bottom: 5px; }
+      .role .tile {
+        width: 16px; height: 16px; border-radius: calc(var(--radius) - 6px);
+        background: var(--c-accent-soft); color: var(--c-accent); display: grid; place-items: center; font-size: 9px;
+      }
+      .role .who { color: var(--c-ink-soft); font-weight: 500; }
+      .role .usage { margin-left: auto; font-family: 'JetBrains Mono Variable', 'JetBrains Mono', Consolas, monospace; opacity: .7; }
+      .msg-user { display: flex; justify-content: flex-end; }
+      .msg-user .bubble {
+        max-width: 85%; background: var(--c-accent-soft); padding: 10px 14px;
+        border-radius: var(--radius) calc(var(--radius) - 6px) var(--radius) var(--radius);
+      }
+      .card {
+        border: 1px solid var(--c-border); border-radius: var(--radius); background: var(--c-surface);
+        padding: 12px 14px; box-shadow: var(--shadow-sm);
+      }
+      .tool {
+        border: 1px solid var(--c-border); border-radius: calc(var(--radius) - 2px);
+        background: color-mix(in oklch, var(--c-surface-2) 60%, transparent); overflow: hidden; margin-top: 8px;
+      }
+      .tool-head { display: flex; align-items: center; gap: 8px; padding: 8px 10px; font-size: 12px; }
+      .tool-head .glyph {
+        width: 20px; height: 20px; border-radius: calc(var(--radius) - 6px); display: grid; place-items: center;
+        background: var(--c-surface-3); font-size: 11px;
+      }
+      .tool-head .name { font-family: 'JetBrains Mono Variable', 'JetBrains Mono', Consolas, monospace; }
+      .tool-head .chip { margin-left: auto; height: 18px; padding: 0 6px; font-size: 11px; }
+      .tool-body { border-top: 1px solid var(--c-border); background: var(--c-surface); padding: 10px; display: none; }
+      .tool[data-open='true'] .tool-body { display: block; }
+      .label { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--c-muted); margin-bottom: 4px; }
+      pre.code {
+        margin: 0; padding: 8px 10px; border: 1px solid var(--c-border); border-radius: calc(var(--radius) - 4px);
+        background: var(--c-canvas); font-family: 'JetBrains Mono Variable', 'JetBrains Mono', Consolas, monospace; font-size: 11.5px;
+        line-height: 1.6; overflow-x: auto; white-space: pre-wrap;
+      }
+      .diff { border: 1px solid var(--c-border); border-radius: calc(var(--radius) - 2px); overflow: hidden; background: var(--c-surface); }
+      .diff-head {
+        display: flex; align-items: center; gap: 8px; padding: 6px 8px; background: var(--c-surface-2);
+        border-bottom: 1px solid var(--c-border); font-size: 11px; color: var(--c-muted);
+      }
+      .diff-head .plus { color: var(--c-ok); font-family: 'JetBrains Mono Variable', 'JetBrains Mono', Consolas, monospace; }
+      .diff-head .minus { color: var(--c-danger); font-family: 'JetBrains Mono Variable', 'JetBrains Mono', Consolas, monospace; }
+      .diff-line {
+        font-family: 'JetBrains Mono Variable', 'JetBrains Mono', Consolas, monospace; font-size: 11.5px; line-height: 1.6;
+        padding: 0 8px; white-space: pre; color: var(--c-muted);
+      }
+      .diff-line.add { background: color-mix(in oklch, var(--c-ok) 10%, transparent); color: var(--c-ink-soft); box-shadow: inset 2px 0 0 0 var(--c-ok); }
+      .diff-line.del { background: color-mix(in oklch, var(--c-danger) 10%, transparent); color: var(--c-ink-soft); box-shadow: inset 2px 0 0 0 var(--c-danger); }
+
+      .approval {
+        border: 1px solid color-mix(in oklch, var(--c-warn) 55%, transparent);
+        background: var(--c-warn-soft); border-radius: var(--radius);
+        box-shadow: inset 3px 0 0 0 var(--c-warn); overflow: hidden; margin-top: 8px;
+        transition: box-shadow .3s;
+      }
+      .approval[data-danger='true'] {
+        border-color: color-mix(in oklch, var(--c-danger) 55%, transparent);
+        background: var(--c-danger-soft); box-shadow: inset 3px 0 0 0 var(--c-danger);
+      }
+      .approval-head { display: flex; align-items: center; gap: 8px; padding: 12px 14px 0; color: var(--c-warn); }
+      .approval[data-danger='true'] .approval-head { color: var(--c-danger); }
+      .approval-head .title { font-weight: 600; font-size: 13px; }
+      .approval-head .chip { margin-left: auto; height: 18px; font-family: 'JetBrains Mono Variable', 'JetBrains Mono', Consolas, monospace; }
+      .approval-body { padding: 8px 14px 14px; }
+      .approval-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+      .countdown { font-size: 11px; color: var(--c-muted); margin-top: 8px; }
+
+      .composer { padding: 0 14px 12px; flex: none; }
+      .composer .box {
+        max-width: 620px; margin: 0 auto; border: 1px solid var(--c-border); border-radius: var(--radius);
+        background: var(--c-surface); box-shadow: var(--shadow-sm);
+      }
+      .composer .box[data-blocked='true'] { border-color: color-mix(in oklch, var(--c-warn) 45%, transparent); }
+      .composer .ctx { display: flex; align-items: center; gap: 6px; padding: 8px 10px 0; }
+      .composer textarea {
+        width: 100%; min-height: 42px; max-height: 140px; resize: none; border: 0; outline: none;
+        background: transparent; color: var(--c-ink); font: inherit; padding: 8px 12px;
+      }
+      .composer textarea::placeholder { color: var(--c-muted); }
+      .composer .foot { display: flex; align-items: center; gap: 8px; padding: 0 10px 8px; }
+      .composer .hints { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--c-muted); }
+      .composer .actions { margin-left: auto; display: flex; gap: 6px; }
+      /* §5.1 硬规则：不能发送时必须说明原因并给入口 */
+      .blocker {
+        max-width: 620px; margin: 0 auto 8px; display: flex; align-items: center; gap: 8px;
+        padding: 7px 10px; border-radius: calc(var(--radius) - 2px); font-size: 11.5px;
+        border: 1px solid color-mix(in oklch, var(--c-warn) 40%, transparent);
+        background: var(--c-warn-soft); color: var(--c-warn);
+      }
+      .blocker .link { margin-left: auto; color: var(--c-accent); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+
+      /* 空状态 */
+      .empty { max-width: 620px; margin: 0 auto; text-align: center; padding: 22px 14px 8px; }
+      .empty .tile {
+        width: 46px; height: 46px; margin: 0 auto 12px; border-radius: calc(var(--radius) + 4px);
+        border: 1px solid var(--c-border); background: var(--c-surface-2); color: var(--c-accent);
+        display: grid; place-items: center; font-size: 20px; box-shadow: var(--shadow-sm);
+      }
+      .empty h2 { font-size: 16px; font-weight: 600; letter-spacing: -.01em; }
+      .empty .sub { color: var(--c-muted); font-size: 13px; margin-top: 5px; }
+      .empty .cta { display: flex; gap: 8px; justify-content: center; margin-top: 16px; }
+      .divider-label {
+        display: flex; align-items: center; gap: 10px; margin: 20px 0 10px;
+        font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--c-muted);
+      }
+      .divider-label::before, .divider-label::after { content: ''; height: 1px; flex: 1; background: var(--c-border); }
+      .starters { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+      @media (max-width: 720px) { .starters { grid-template-columns: 1fr; } }
+      .starter {
+        border: 1px solid var(--c-border); border-radius: var(--radius); background: var(--c-surface);
+        padding: 10px; text-align: left; font: inherit; color: var(--c-ink-soft); font-size: 12px; cursor: pointer;
+        line-height: 1.5;
+      }
+      .starter:hover:not(:disabled) { border-color: var(--c-border-strong); background: var(--c-surface-2); }
+      .starter:disabled { opacity: .45; cursor: not-allowed; }
+      .starter .glyph { color: var(--c-accent); display: block; margin-bottom: 6px; }
+      .starter .why { display: block; margin-top: 5px; font-size: 11px; color: var(--c-muted); }
+      .abilities { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 14px; }
+      @media (max-width: 860px) { .abilities { grid-template-columns: repeat(2, 1fr); } }
+      .ability { display: flex; gap: 7px; font-size: 11.5px; }
+      .ability .glyph { color: var(--c-muted); }
+      .ability b { display: block; font-weight: 500; color: var(--c-ink-soft); }
+      .ability span { color: var(--c-muted); }
+
+      /* 通用块 */
+      .steps { display: flex; flex-direction: column; gap: 6px; }
+      .step { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--c-ink-soft); }
+      .step .dot {
+        width: 14px; height: 14px; border-radius: 999px; border: 1px solid var(--c-border-strong);
+        display: grid; place-items: center; font-size: 9px; flex: none;
+      }
+      .step[data-state='done'] .dot { background: var(--c-ok-soft); border-color: color-mix(in oklch, var(--c-ok) 40%, transparent); color: var(--c-ok); }
+      .step[data-state='run'] .dot { border-color: var(--c-accent); color: var(--c-accent); }
+      .step .t { color: var(--c-muted); margin-left: auto; font-family: 'JetBrains Mono Variable', 'JetBrains Mono', Consolas, monospace; font-size: 11px; }
+      .summary { display: flex; align-items: baseline; gap: 8px; font-size: 15px; font-weight: 600; }
+      .summary .of { color: var(--c-muted); font-size: 12px; font-weight: 400; }
+      .fails { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+      .fail {
+        display: flex; gap: 8px; align-items: flex-start; font-size: 12px;
+        padding: 7px 9px; border-radius: calc(var(--radius) - 4px);
+        background: var(--c-danger-soft); border: 1px solid color-mix(in oklch, var(--c-danger) 30%, transparent);
+      }
+      .fail .why { color: var(--c-muted); }
+      .notice {
+        display: flex; gap: 8px; align-items: flex-start; padding: 10px 12px; font-size: 12px;
+        border-radius: calc(var(--radius) - 2px); border: 1px solid var(--c-border); background: var(--c-surface-2);
+      }
+      .notice.warn { border-color: color-mix(in oklch, var(--c-warn) 40%, transparent); background: var(--c-warn-soft); color: var(--c-warn); }
+      .notice.danger { border-color: color-mix(in oklch, var(--c-danger) 40%, transparent); background: var(--c-danger-soft); color: var(--c-danger); }
+      .notice.ok { border-color: color-mix(in oklch, var(--c-ok) 35%, transparent); background: var(--c-ok-soft); color: var(--c-ok); }
+      .notice .body { color: var(--c-ink-soft); }
+      .notice .next { margin-top: 8px; display: flex; gap: 8px; }
+
+      /* 面板三件套示意 */
+      .panels { display: grid; grid-template-columns: 1.1fr 1fr; gap: 12px; }
+      @media (max-width: 860px) { .panels { grid-template-columns: 1fr; } }
+      .panel { border: 1px solid var(--c-border); border-radius: var(--radius); background: var(--c-surface); overflow: hidden; box-shadow: var(--shadow-sm); }
+      .panel-head {
+        display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 10px;
+        border-bottom: 1px solid var(--c-border); background: var(--c-surface-2);
+        font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--c-muted);
+      }
+      .panel-head .actions { margin-left: auto; display: flex; gap: 2px; }
+      .tree { padding: 8px; font-size: 12px; }
+      .node { display: flex; align-items: center; gap: 7px; padding: 4px 6px; border-radius: calc(var(--radius) - 4px); color: var(--c-ink-soft); }
+      .node:hover { background: var(--c-surface-2); }
+      .node.dir .glyph { color: var(--c-accent); }
+      .node .glyph { color: var(--c-muted); }
+      .node .indent { width: 11px; }
+      .terminal {
+        background: var(--c-canvas); font-family: 'JetBrains Mono Variable', 'JetBrains Mono', Consolas, monospace; font-size: 11.5px;
+        padding: 10px; color: var(--c-ink-soft); line-height: 1.6; min-height: 150px;
+      }
+      .terminal .dim { color: var(--c-muted); }
+
+      /* 设置里的主题网格 */
+      .theme-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+      .theme-card {
+        width: 132px; border: 1px solid var(--c-border); border-radius: var(--radius); background: var(--c-surface);
+        padding: 8px; text-align: left; font: inherit; cursor: pointer; display: flex; flex-direction: column; gap: 6px;
+      }
+      .theme-card[aria-pressed='true'] { border-color: var(--c-accent); background: var(--c-accent-soft); }
+      .swatch { display: flex; align-items: center; gap: 0; height: 16px; width: 28px; border-radius: calc(var(--radius) - 6px); border: 1px solid var(--c-border); overflow: hidden; }
+      .swatch i { display: block; height: 100%; }
+      .theme-card b { font-size: 12px; font-weight: 500; }
+      .theme-card span { font-size: 11px; color: var(--c-muted); line-height: 1.45; }
+
+      /* 键盘地图 */
+      .keys { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 22px; }
+      @media (max-width: 760px) { .keys { grid-template-columns: 1fr; } }
+      .keys h3 { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--c-muted); margin-bottom: 6px; }
+      .keyrow { display: flex; align-items: center; gap: 10px; padding: 5px 0; font-size: 12px; border-bottom: 1px solid var(--c-border); }
+      .keyrow:last-child { border-bottom: 0; }
+      .keyrow .what { color: var(--c-ink-soft); }
+      .keyrow .keys-l { margin-left: auto; display: flex; gap: 4px; }
+      .todo { color: var(--c-warn); font-size: 11px; margin-left: 6px; }
+    </style>
+  </head>
+  <body>
+    <!-- 原型自己的工具条（真实产品里没有这一条） -->
+    <div class="proto-bar">
+      <span class="proto-title">i-pi-desk · 界面与交互设计原型</span>
+      <span class="proto-note">设计稿见 docs/UI-DESIGN.md ｜ 配色与本机一致</span>
+      <div class="theme-row" role="group" aria-label="主题">
+        <button class="btn btn-sm" data-theme-btn="midnight">Midnight</button>
+        <button class="btn btn-sm" data-theme-btn="graphite">Graphite</button>
+        <button class="btn btn-sm" data-theme-btn="daylight">Daylight</button>
+        <button class="btn btn-sm" data-theme-btn="paper">Paper</button>
+        <button class="btn btn-sm" data-theme-btn="contrast">Contrast</button>
+      </div>
+    </div>
+
+    <div class="stage">
+      <nav class="rail" aria-label="设计稿画面">
+        <div class="rail-title">状态（§3）</div>
+        <div class="hint">每个状态回答用户的一个具体问题。点开逐个看。</div>
+        <button data-screen="empty" aria-selected="true">空 · 未选目录</button>
+        <button data-screen="empty-ready">空 · 已选目录</button>
+        <button data-screen="thinking">思考 · 步骤与计时</button>
+        <button data-screen="streaming">流式 · 可停止</button>
+        <button data-screen="approval">审批 · 就地展开</button>
+        <button data-screen="partial">部分完成</button>
+        <button data-screen="error">错误 · 一个恢复动作</button>
+        <button data-screen="refusal">拒绝 · 三种「不」</button>
+        <button data-screen="limits">限额 · 撞墙前提醒</button>
+        <div class="rail-title" style="margin-top:10px">结构（§2 / §4）</div>
+        <button data-screen="panels">四块面板</button>
+        <button data-screen="settings">设置 · 主题网格</button>
+        <button data-screen="keys">键盘地图</button>
+      </nav>
+
+      <main class="canvas">
+        <!-- ══════════ 空 · 未选目录 ══════════ -->
+        <section class="screen" data-screen-id="empty" data-active="true">
+          <div class="screen-head">
+            <h1>空 · 未选目录</h1>
+            <p class="q">它回答「这里能干什么」。示例置灰并给出原因 —— 不承诺做不到的事。</p>
+          </div>
+          <div class="screen-body">
+            <div class="empty">
+              <div class="tile">✦</div>
+              <h2>本地优先的 AI 编程工作台</h2>
+              <p class="sub">代码与密钥都留在本机，模型可以指向你内网的端点。</p>
+              <div class="cta">
+                <button class="btn btn-primary">📁 选择一个工作目录</button>
+                <button class="btn btn-outline">⚙ 配置模型 provider</button>
+              </div>
+              <div class="divider-label">选好工作目录后，可以这样开口</div>
+              <div class="starters">
+                <button class="starter" disabled>
+                  <span class="glyph">◎</span>先带我过一遍这个项目的结构，指出入口文件
+                  <span class="why">需要先选目录（示例会按你的项目生成）</span>
+                </button>
+                <button class="starter" disabled><span class="glyph">≡</span>找出代码里所有 TODO，按文件归类</button>
+                <button class="starter" disabled><span class="glyph">⚗</span>跑一遍测试，把失败的用例和原因列出来</button>
+              </div>
+              <div class="abilities">
+                <div class="ability"><span class="glyph">▤</span><span><b>读写文件</b><span>改动前先给你看 diff</span></span></div>
+                <div class="ability"><span class="glyph">▥</span><span><b>执行命令</b><span>危险命令即使自动模式也会问</span></span></div>
+                <div class="ability"><span class="glyph">⇄</span><span><b>差异视图</b><span>上下 / 并排可切换</span></span></div>
+                <div class="ability"><span class="glyph">✦</span><span><b>技能与插件</b><span>可复用的团队规范</span></span></div>
+              </div>
+            </div>
+            <div class="composer">
+              <div class="blocker">还没有工作目录，agent 不知道在哪干活。<span class="link">选择一个目录 →</span></div>
+              <div class="box" data-blocked="true">
+                <textarea placeholder="先选一个工作目录…" disabled></textarea>
+                <div class="foot">
+                  <span class="hints"><span class="kbd">Enter</span> 发送 <span class="kbd">Shift</span><span class="kbd">Enter</span> 换行</span>
+                  <span class="actions"><button class="btn btn-primary" disabled>发送 ↑</button></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ══════════ 空 · 已选目录 ══════════ -->
+        <section class="screen" data-screen-id="empty-ready">
+          <div class="screen-head">
+            <h1>空 · 已选目录</h1>
+            <p class="q">示例改成<b>按这个目录的真实情况生成</b>（这里举一个含 <span class="mono">package.json</span> + <span class="mono">src/</span> 的项目）。</p>
+          </div>
+          <div class="screen-body">
+            <div class="empty">
+              <div class="tile">✦</div>
+              <h2>今天想在 <span style="color: var(--c-accent)">pnpm-test-fixture</span> 里做点什么？</h2>
+              <p class="sub">代码与密钥都留在本机，模型可以指向你内网的端点。</p>
+              <div class="cta">
+                <button class="btn btn-primary">📁 切换工作目录</button>
+                <button class="btn btn-outline">⚙ 配置模型 provider</button>
+              </div>
+              <div class="divider-label">可以这样开口</div>
+              <div class="starters">
+                <button class="starter"><span class="glyph">◎</span>带我过一遍 src/ 的结构，指出入口文件<span class="why">这个目录里有 6 个源文件</span></button>
+                <button class="starter"><span class="glyph">⚗</span>跑一遍 pnpm test，把失败用例和原因列出来<span class="why">检测到 package.json 里有 test 脚本</span></button>
+                <button class="starter"><span class="glyph">≡</span>找出代码里所有 TODO，按文件归类<span class="why">在 3 个文件里找到 7 处 TODO</span></button>
+              </div>
+              <div class="abilities">
+                <div class="ability"><span class="glyph">▤</span><span><b>读写文件</b><span>改动前先给你看 diff</span></span></div>
+                <div class="ability"><span class="glyph">▥</span><span><b>执行命令</b><span>危险命令即使自动模式也会问</span></span></div>
+                <div class="ability"><span class="glyph">⇄</span><span><b>差异视图</b><span>上下 / 并排可切换</span></span></div>
+                <div class="ability"><span class="glyph">✦</span><span><b>技能与插件</b><span>可复用的团队规范</span></span></div>
+              </div>
+            </div>
+            <div class="composer">
+              <div class="box">
+                <div class="ctx">
+                  <span class="chip">◎ pnpm-test-fixture</span>
+                  <span class="chip chip-accent">🛡 每次询问</span><span class="chip">◐ 思考强度 medium</span>
+                </div>
+                <textarea placeholder="让 agent 做点什么…">带我过一遍 src/ 的结构，指出入口文件</textarea>
+                <div class="foot">
+                  <span class="hints"><span class="kbd">Enter</span> 发送 · <span class="kbd">Shift</span><span class="kbd">Enter</span> 换行 · <span class="kbd">↑</span> 翻历史</span>
+                  <span class="actions"><button class="btn btn-primary">发送 ↑</button></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ══════════ 思考 ══════════ -->
+        <section class="screen" data-screen-id="thinking">
+          <div class="screen-head">
+            <h1>思考 · 步骤与计时</h1>
+            <p class="q">它回答「它在转吗、在转什么」。1–2 秒内把「生成中」升级成说人话的步骤；超过 10 秒给已用时长；停止始终可见。</p>
+          </div>
+          <div class="screen-body">
+            <div class="stream">
+              <div class="col">
+                <div class="msg-user"><div class="bubble">跑一遍测试，把失败的原因列出来</div></div>
+                <div>
+                  <div class="role"><span class="tile">✦</span><span class="who">agent</span><span class="usage">已用 0:12 · in 1.2k / out 340</span></div>
+                  <div class="card">
+                    <div class="steps">
+                      <div class="step" data-state="done"><span class="dot">✓</span>读取 package.json，找到 test 脚本<span class="t">0.4s</span></div>
+                      <div class="step" data-state="done"><span class="dot">✓</span>读取 src/sum.test.ts<span class="t">0.2s</span></div>
+                      <div class="step" data-state="run"><span class="dot">•</span>正在运行 <span class="mono">pnpm test</span><span class="t">11.4s</span></div>
+                      <div class="step" data-state="idle" style="color:var(--c-muted)"><span class="dot"> </span>等待上一步的输出…</div>
+                    </div>
+                    <div class="notice" style="margin-top:12px">
+                      <span>⏱</span>
+                      <span class="body">运行超过 10 秒时会显示已用时长，并可以「跑完提醒我」。<b>停止</b>一直在输入区右侧。</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="composer">
+              <div class="box">
+                <div class="ctx"><span class="chip">◎ pnpm-test-fixture</span><span class="chip chip-accent">🛡 每次询问</span><span class="chip">◐ 思考强度 medium</span></div>
+                <textarea placeholder="（生成中，输入会排队）" disabled></textarea>
+                <div class="foot">
+                  <span class="hints">生成中 · 可随时停止</span>
+                  <span class="actions"><button class="btn btn-danger">■ 中止</button></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ══════════ 流式 ══════════ -->
+        <section class="screen" data-screen-id="streaming">
+          <div class="screen-head">
+            <h1>流式 · 可停止、可滚动</h1>
+            <p class="q">它回答「能读了吗、能停吗」。发送变停止；停止保留已到达内容；往上滚就停止自动滚动。</p>
+          </div>
+          <div class="screen-body">
+            <div class="stream">
+              <div class="col">
+                <div class="msg-user"><div class="bubble">解释一下 sum.ts 里那个 off-by-one</div></div>
+                <div>
+                  <div class="role"><span class="tile">✦</span><span class="who">agent</span><span class="usage">in 820 / out 96</span></div>
+                  <div class="card">
+                    <p>问题出在循环的上界：<span class="mono">&lt;=</span> 会多算一次。</p>
+                    <div class="diff" style="margin-top:10px">
+                      <div class="diff-head"><span>改动</span><span class="plus">+1</span><span class="minus">-1</span><span style="margin-left:auto">⇅ 并排</span></div>
+                      <div class="diff-line">-8  for (let i = 0; i &lt;= list.length; i++) {</div>
+                      <div class="diff-line add">+8  for (let i = 0; i &lt; list.length; i++) {</div>
+                    </div>
+                    <p style="margin-top:10px; color: var(--c-muted)">用 <span class="mono">list.length</span> 时下标最大到 n-1<span class="cursor">▌</span></p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="composer">
+              <div class="box">
+                <div class="ctx"><span class="chip">◎ pnpm-test-fixture</span><span class="chip chip-accent">🛡 每次询问</span><span class="chip">◐ 思考强度 medium</span></div>
+                <textarea placeholder="生成中…" disabled></textarea>
+                <div class="foot">
+                  <span class="hints">正在生成 · 往上滚不会把你拉回底部</span>
+                  <span class="actions"><button class="btn btn-danger">■ 中止</button></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ══════════ 审批 ══════════ -->
+        <section class="screen" data-screen-id="approval">
+          <div class="screen-head">
+            <h1>审批 · 就地展开</h1>
+            <p class="q">它回答「要动什么、影响多大」。不弹窗（目标就在眼前），给范围准确的三个动作，并说明超时会怎样。<b>点一下按钮看状态变化。</b></p>
+          </div>
+          <div class="screen-body">
+            <div class="stream">
+              <div class="col">
+                <div class="msg-user"><div class="bubble">修掉 sum.ts 里的 off-by-one</div></div>
+                <div>
+                  <div class="role"><span class="tile">✦</span><span class="who">agent</span><span class="usage">in 940 / out 210</span></div>
+                  <div class="card">
+                    <p>我改一行：把 <span class="mono">&lt;=</span> 换成 <span class="mono">&lt;</span>。</p>
+                    <div class="tool" data-open="true">
+                      <div class="tool-head" onclick="this.parentElement.dataset.open = this.parentElement.dataset.open === 'true' ? 'false' : 'true'">
+                        <span class="glyph">›</span><span class="glyph">✎</span><span class="name">edit</span>
+                        <span class="chip chip-warn" id="tool-chip">⏳ 等待授权</span>
+                      </div>
+                      <div class="tool-body">
+                        <div class="label">参数</div>
+                        <pre class="code">{ "path": "src/sum.ts", "oldText": "i &lt;= list.length", "newText": "i &lt; list.length" }</pre>
+                      </div>
+                    </div>
+
+                    <div class="approval" id="approval" data-danger="false">
+                      <div class="approval-head">
+                        <span>🛡</span><span class="title">需要你确认</span>
+                        <span class="chip">edit</span>
+                      </div>
+                      <div class="approval-body">
+                        <div class="label">将要改动的内容</div>
+                        <div class="diff">
+                          <div class="diff-head"><span>改动</span><span class="plus">+1</span><span class="minus">-1</span><span style="margin-left:auto">⇅ 并排</span></div>
+                          <div class="diff-line">-2  for (let i = 0; i &lt;= list.length; i++) {</div>
+                          <div class="diff-line add">+2  for (let i = 0; i &lt; list.length; i++) {</div>
+                        </div>
+                        <div class="approval-actions" id="approval-actions">
+                          <button class="btn btn-primary" data-decide="allow-once">仅允许这一次</button>
+                          <button class="btn btn-outline" data-decide="allow-always" title="同一工具、完全相同参数的调用，本会话内不再询问">本会话内始终允许（相同参数）</button>
+                          <button class="btn" style="border:1px solid color-mix(in oklch, var(--c-danger) 50%, transparent); color: var(--c-danger)" data-decide="deny">拒绝</button>
+                        </div>
+                        <div class="countdown" id="approval-countdown">还有 4 分 52 秒超时 · 超时按「拒绝」处理，这一步不会执行，其余步骤继续</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="composer">
+              <div class="box">
+                <div class="ctx"><span class="chip">◎ pnpm-test-fixture</span><span class="chip chip-accent">🛡 每次询问</span><span class="chip">◐ 思考强度 medium</span><span class="chip chip-warn">⏳ 等待你的确认</span></div>
+                <textarea placeholder="有操作等待你的确认…" disabled></textarea>
+                <div class="foot">
+                  <span class="hints">审批期间不能发送下一条</span>
+                  <span class="actions"><button class="btn btn-danger">■ 中止</button></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ══════════ 部分完成 ══════════ -->
+        <section class="screen" data-screen-id="partial">
+          <div class="screen-head">
+            <h1>部分完成</h1>
+            <p class="q">它回答「做完了哪些、没做哪些」。先给数字，再逐条列失败原因；重试只重跑失败的那几步。</p>
+          </div>
+          <div class="screen-body">
+            <div class="stream">
+              <div class="col">
+                <div class="msg-user"><div class="bubble">把这个目录里所有文件的 console.log 换成 logger.info</div></div>
+                <div>
+                  <div class="role"><span class="tile">✦</span><span class="who">agent</span><span class="usage">in 3.4k / out 890</span></div>
+                  <div class="card">
+                    <div class="summary">8 步里完成了 6 步<span class="of">2 步没做成，原因见下</span></div>
+                    <div class="fails">
+                      <div class="fail"><span>✕</span><span><b class="mono">src/legacy.js</b><br /><span class="why">这个文件在只读挂载上，写入被系统拒绝（EPERM）</span></span></div>
+                      <div class="fail"><span>✕</span><span><b class="mono">src/vendor/*.ts</b><br /><span class="why">你拒绝了这次操作（整目录覆盖）</span></span></div>
+                    </div>
+                    <div class="notice" style="margin-top:12px">
+                      <span>⇄</span>
+                      <span class="body">已完成 6 个文件的改动<b>都还在</b>（各自都过了审批与 diff）。「重试失败项」只重跑上面两条，不会重复已经改好的文件。</span>
+                    </div>
+                    <div class="approval-actions">
+                      <button class="btn btn-primary">重试失败项（2）</button>
+                      <button class="btn btn-outline">看改了哪些文件（6）</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="composer">
+              <div class="box">
+                <div class="ctx"><span class="chip">◎ pnpm-test-fixture</span><span class="chip chip-accent">🛡 每次询问</span><span class="chip">◐ 思考强度 medium</span></div>
+                <textarea placeholder="让 agent 做点什么…"></textarea>
+                <div class="foot">
+                  <span class="hints"><span class="kbd">Enter</span> 发送 · 这一轮已结束，可以直接发下一条</span>
+                  <span class="actions"><button class="btn btn-primary">发送 ↑</button></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ══════════ 错误 ══════════ -->
+        <section class="screen" data-screen-id="error">
+          <div class="screen-head">
+            <h1>错误 · 一个恢复动作</h1>
+            <p class="q">它回答「哪儿坏了、我的东西还在吗」。说清是什么、重试有没有用、什么被保住了，然后只给一个主要动作。</p>
+          </div>
+          <div class="screen-body">
+            <div class="stream">
+              <div class="col">
+                <div class="msg-user"><div class="bubble">继续把剩下的文件改完</div></div>
+                <div>
+                  <div class="role"><span class="tile">✦</span><span class="who">agent</span></div>
+                  <div class="card">
+                    <div class="notice danger">
+                      <span>⚠</span>
+                      <span class="body">
+                        连不上模型端点 <b class="mono">http://10.0.0.10:8000/v1</b>（连接被拒绝）。<br />
+                        这通常是内网服务没起来，<b>重试一般有用</b>；如果是地址写错了，去设置里改。
+                      </span>
+                    </div>
+                    <div class="notice" style="margin-top:10px">
+                      <span>✓</span>
+                      <span class="body">
+                        <b>你的东西都还在</b>：这条消息（<span class="mono">继续把剩下的文件改完</span>）已填回输入框；
+                        前 6 个文件的改动已在磁盘上，且各自都有 diff 记录。
+                      </span>
+                    </div>
+                    <div class="approval-actions">
+                      <button class="btn btn-primary">重试这一轮</button>
+                      <button class="btn btn-outline">去设置检查端点</button>
+                      <button class="btn">查看日志（次要）</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="composer">
+              <div class="box">
+                <textarea>继续把剩下的文件改完</textarea>
+                <div class="foot">
+                  <span class="hints">输入已保留 · 修好端点后直接回车</span>
+                  <span class="actions"><button class="btn btn-primary">发送 ↑</button></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ══════════ 拒绝 ══════════ -->
+        <section class="screen" data-screen-id="refusal">
+          <div class="screen-head">
+            <h1>拒绝 · 三种「不」</h1>
+            <p class="q">它回答「为什么不行、那我能做什么」。一句话说不，点明是哪种不（权限 / 能力 / 政策），给出最近的替代。</p>
+          </div>
+          <div class="screen-body pad">
+            <p class="lede">三种「不」的下一步完全不同，所以文案必须分开写 —— 用同一句话会让人以为产品坏了。</p>
+            <div style="display:flex; flex-direction:column; gap:12px">
+              <div class="card">
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px">
+                  <span class="chip chip-warn">权限</span><b>需要你确认（当前是「每次询问」）</b>
+                </div>
+                <p>这一步要写 <span class="mono">src/sum.ts</span>，我在等你点「仅允许这一次」。</p>
+                <div class="notice" style="margin-top:8px"><span class="body">下一个动作：上面的审批卡。或把权限模式改成「自动放行」（危险命令仍会问）。</span></div>
+              </div>
+              <div class="card">
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px">
+                  <span class="chip">能力</span><b>这次运行没有这个工具</b>
+                </div>
+                <p>我需要 <span class="mono">fixture_echo</span>，但它不在本次生效的工具集里（插件没启用）。</p>
+                <div class="notice" style="margin-top:8px"><span class="body">下一个动作：设置 → 插件 → 启用它；然后<b>新建一个会话</b>（工具集在建会话时装载）。</span></div>
+              </div>
+              <div class="card">
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px">
+                  <span class="chip chip-danger">政策</span><b>端点拒绝了这次请求</b>
+                </div>
+                <p>厂商侧的原文：「request violates usage policy」。</p>
+                <div class="notice" style="margin-top:8px"><span class="body">下一个动作：换一种说法重试，或换一个模型端点。不做的是替你「改写到能过」——那等于绕开对方的策略。</span></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ══════════ 限额 ══════════ -->
+        <section class="screen" data-screen-id="limits">
+          <div class="screen-head">
+            <h1>限额 · 撞墙前提醒</h1>
+            <p class="q">它回答「什么时候能继续」。接近上限就提示，撞上时给具体数字与入口，并说明什么还能用、进行中的工作不会丢。</p>
+          </div>
+          <div class="screen-body">
+            <div class="stream">
+              <div class="col">
+                <div class="msg-user"><div class="bubble">把整个项目的 eslint 警告全修掉</div></div>
+                <div>
+                  <div class="role"><span class="tile">✦</span><span class="who">agent</span><span class="usage">in 12.4k / out 2.1k</span></div>
+                  <div class="card">
+                    <div class="notice warn">
+                      <span>◷</span>
+                      <span class="body">
+                        已达到本次运行的<b>最大步数 40</b>（设置 → 通用 → 单次最大步数）。<br />
+                        本次已改 23 个文件，<b>改动都在磁盘上、也都有 diff 记录</b>；这条会话可以继续追问，历史与文件都不会丢。
+                      </span>
+                    </div>
+                    <div class="approval-actions">
+                      <button class="btn btn-primary">调大上限并继续</button>
+                      <button class="btn btn-outline">就到这里，看改了哪些文件（23）</button>
+                    </div>
+                  </div>
+                </div>
+                <div class="notice" style="max-width:620px; margin:0 auto">
+                  <span>ⓘ</span>
+                  <span class="body">
+                    另一类限额是<b>上下文长度</b>：这一轮重放历史时截断了 6 条较早的消息（上限 40 条 / 60000 字符）。
+                    被截断的消息<b>没有被删除</b>，只是这一轮没带进模型。
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div class="composer">
+              <div class="box">
+                <div class="ctx"><span class="chip chip-warn">◷ 步数 40 / 40</span></div>
+                <textarea placeholder="可以直接接着追问，或调大上限"></textarea>
+                <div class="foot">
+                  <span class="hints">限额不会清空输入或会话</span>
+                  <span class="actions"><button class="btn btn-primary">发送 ↑</button></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ══════════ 四块面板 ══════════ -->
+        <section class="screen" data-screen-id="panels">
+          <div class="screen-head">
+            <h1>四块面板 · 同一套外壳</h1>
+            <p class="q">终端跟随主题（不是硬黑）；文件树与编辑器用同一套 38px 面板头；diff 用「中性文字 + 左侧色条」。</p>
+          </div>
+          <div class="panels">
+            <div class="panel">
+              <div class="panel-head">
+                <span>▤</span>工作区文件
+                <span class="actions"><span class="icon">＋</span><span class="icon">↻</span><span class="icon">✕</span></span>
+              </div>
+              <div class="tree">
+                <div class="node dir"><span class="indent">›</span><span class="glyph">▸</span>src</div>
+                <div class="node" style="padding-left:22px"><span class="glyph">▤</span>main.ts</div>
+                <div class="node" style="padding-left:22px"><span class="glyph">▤</span>sum.ts</div>
+                <div class="node" style="padding-left:22px"><span class="glyph">▤</span>sum.test.ts</div>
+                <div class="node"><span class="indent">›</span><span class="glyph">▸</span>docs</div>
+                <div class="node"><span class="glyph">▤</span>package.json</div>
+                <div class="node"><span class="glyph">▤</span>README.md</div>
+              </div>
+            </div>
+            <div class="panel">
+              <div class="panel-head">
+                <span>▤</span><span class="mono" style="text-transform:none; letter-spacing:0">src/sum.ts</span>
+                <span class="chip chip-warn" style="height:18px">● 未保存</span>
+                <span class="actions"><span class="icon">✕</span></span>
+              </div>
+              <pre class="code" style="border:0; border-radius:0; min-height:150px">export function sum(list: number[]): number {
+  let total = 0
+  for (let i = 0; i &lt; list.length; i++) {
+    total += list[i]
+  }
+  return total
+}</pre>
+            </div>
+            <div class="panel" style="grid-column:1 / -1">
+              <div class="panel-head"><span>▥</span><span class="mono" style="text-transform:none; letter-spacing:0">C:\Windows\system32\cmd.exe</span>
+                <span class="actions"><span class="icon">＋</span><span class="icon">✕</span></span>
+              </div>
+              <div class="terminal">
+                Microsoft Windows [版本 10.0.26200.9457]<br />
+                (c) Microsoft Corporation。保留所有权利。<br /><br />
+                <span class="dim">C:\work\fixture&gt;</span> pnpm test<br />
+                <span class="dim">✓ 12 passed · ✕ 1 failed</span><br />
+                <span class="dim">C:\work\fixture&gt;</span> ▌
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ══════════ 设置 ══════════ -->
+        <section class="screen" data-screen-id="settings">
+          <div class="screen-head">
+            <h1>设置 · 主题网格</h1>
+            <p class="q">外观不再是一个只能表达亮暗的下拉，而是六张卡片（跟随系统 + 五套主题），当前项高亮。<b>点卡片会真的换掉整个原型的主题。</b></p>
+          </div>
+          <div class="screen-body pad" style="max-width:720px">
+            <p class="lede">模型与设置</p>
+            <div style="display:flex; align-items:baseline; gap:10px; margin-bottom:8px">
+              <b>外观</b><span style="font-size:11px; color:var(--c-muted)">同时作用于面板、终端与原生控件</span>
+            </div>
+            <div class="theme-grid" id="proto-theme-grid">
+              <button class="theme-card" data-theme-btn="system">
+                <span style="display:flex; align-items:center; gap:8px"><span class="swatch"><i style="width:34%; background:#f4f6f9"></i><i style="width:33%; background:#101318"></i><i style="width:33%; background:#5b9bff"></i></span><b>跟随系统</b></span>
+                <span>按系统亮暗自动切换</span>
+              </button>
+              <button class="theme-card" data-theme-btn="midnight" aria-pressed="true">
+                <span style="display:flex; align-items:center; gap:8px"><span class="swatch"><i style="width:34%; background:#101318"></i><i style="width:33%; background:#1a1f26"></i><i style="width:33%; background:#5b9bff"></i></span><b>Midnight</b></span>
+                <span>深蓝黑，默认。长时间盯屏最省眼</span>
+              </button>
+              <button class="theme-card" data-theme-btn="graphite">
+                <span style="display:flex; align-items:center; gap:8px"><span class="swatch"><i style="width:34%; background:#15161a"></i><i style="width:33%; background:#22242a"></i><i style="width:33%; background:#6fd3e0"></i></span><b>Graphite</b></span>
+                <span>中性深灰 + 青绿，紧凑克制</span>
+              </button>
+              <button class="theme-card" data-theme-btn="daylight">
+                <span style="display:flex; align-items:center; gap:8px"><span class="swatch"><i style="width:34%; background:#f4f6f9"></i><i style="width:33%; background:#ffffff"></i><i style="width:33%; background:#2f6bff"></i></span><b>Daylight</b></span>
+                <span>清爽浅色，白天用</span>
+              </button>
+              <button class="theme-card" data-theme-btn="paper">
+                <span style="display:flex; align-items:center; gap:8px"><span class="swatch"><i style="width:34%; background:#f5efe2"></i><i style="width:33%; background:#fffdf7"></i><i style="width:33%; background:#b4622a"></i></span><b>Paper</b></span>
+                <span>暖色护眼，长时间阅读舒服</span>
+              </button>
+              <button class="theme-card" data-theme-btn="contrast">
+                <span style="display:flex; align-items:center; gap:8px"><span class="swatch"><i style="width:34%; background:#000000"></i><i style="width:33%; background:#191919"></i><i style="width:33%; background:#ffd83d"></i></span><b>Contrast</b></span>
+                <span>高对比（无障碍取向）：近黑底、纯白字、亮黄强调</span>
+              </button>
+            </div>
+            <div style="margin-top:16px; display:flex; flex-direction:column; gap:12px">
+              <div style="display:flex; align-items:flex-start; gap:12px">
+                <div style="width:96px; padding-top:4px"><b>权限模式</b><br /><span style="font-size:11px;color:var(--c-muted)">决定 agent 执行写文件 / 跑命令前是否询问</span></div>
+                <select class="field" style="width:auto"><option>每次询问（推荐）</option><option>只读（最安全）</option><option>自动放行（危险命令仍会问）</option></select>
+              </div>
+              <div style="display:flex; align-items:flex-start; gap:12px">
+                <div style="width:96px; padding-top:4px"><b>单次最大步数</b><br /><span style="font-size:11px;color:var(--c-muted)">限制一次任务里工具调用的轮数</span></div>
+                <input class="field" style="width:80px" value="40" />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ══════════ 键盘地图 ══════════ -->
+        <section class="screen" data-screen-id="keys">
+          <div class="screen-head">
+            <h1>键盘地图（提议）</h1>
+            <p class="q">不新增功能，只是把已有的操作变快。带「新增」标记的是这一版设计提议加的。</p>
+          </div>
+          <div class="screen-body pad">
+            <div class="keys">
+              <div>
+                <h3>全局</h3>
+                <div class="keyrow"><span class="what">聚焦输入框</span><span class="keys-l"><span class="kbd">Ctrl</span><span class="kbd">K</span></span><span class="todo">新增</span></div>
+                <div class="keyrow"><span class="what">新建会话</span><span class="keys-l"><span class="kbd">Ctrl</span><span class="kbd">N</span></span><span class="todo">新增</span></div>
+                <div class="keyrow"><span class="what">开合文件树</span><span class="keys-l"><span class="kbd">Ctrl</span><span class="kbd">B</span></span><span class="todo">新增</span></div>
+                <div class="keyrow"><span class="what">开合终端</span><span class="keys-l"><span class="kbd">Ctrl</span><span class="kbd">`</span></span><span class="todo">新增</span></div>
+                <div class="keyrow"><span class="what">本键盘地图</span><span class="keys-l"><span class="kbd">?</span></span><span class="todo">新增</span></div>
+              </div>
+              <div>
+                <h3>对话</h3>
+                <div class="keyrow"><span class="what">发送 / 换行</span><span class="keys-l"><span class="kbd">Enter</span> / <span class="kbd">Shift</span><span class="kbd">Enter</span></span></div>
+                <div class="keyrow"><span class="what">翻输入历史（单行时）</span><span class="keys-l"><span class="kbd">↑</span><span class="kbd">↓</span></span></div>
+                <div class="keyrow"><span class="what">中止本次运行</span><span class="keys-l"><span class="kbd">Esc</span><span class="kbd">Esc</span></span><span class="todo">新增</span></div>
+                <div class="keyrow"><span class="what">关掉最上层浮层</span><span class="keys-l"><span class="kbd">Esc</span></span></div>
+                <div class="keyrow"><span class="what">裁决审批（不默认聚焦按钮）</span><span class="keys-l">先 <span class="kbd">Tab</span> 再 <span class="kbd">Enter</span></span></div>
+              </div>
+              <div>
+                <h3>文件与编辑器</h3>
+                <div class="keyrow"><span class="what">保存</span><span class="keys-l"><span class="kbd">Ctrl</span><span class="kbd">S</span></span></div>
+                <div class="keyrow"><span class="what">搜索（编辑器内）</span><span class="keys-l"><span class="kbd">Ctrl</span><span class="kbd">F</span></span></div>
+                <div class="keyrow"><span class="what">关闭编辑器（脏则先问）</span><span class="keys-l"><span class="kbd">Esc</span></span></div>
+              </div>
+              <div>
+                <h3>有意不做</h3>
+                <div class="keyrow"><span class="what">终端里 agent 与用户抢键盘</span><span class="keys-l">不做</span></div>
+                <div class="keyrow"><span class="what">单键（无修饰）触发危险操作</span><span class="keys-l">不做</span></div>
+                <div class="keyrow"><span class="what">审批卡自动聚焦到「允许」</span><span class="keys-l">不做（回车就放行太危险）</span></div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      // ── 画面切换（支持 #锚点，便于直接分享某一屏） ──
+      const railButtons = [...document.querySelectorAll('.rail button')]
+      const screens = [...document.querySelectorAll('.screen')]
+      const show = (id, updateHash = true) => {
+        if (!screens.some((s) => s.dataset.screenId === id)) return
+        for (const s of screens) s.dataset.active = String(s.dataset.screenId === id)
+        for (const b of railButtons) b.setAttribute('aria-selected', String(b.dataset.screen === id))
+        if (updateHash) history.replaceState(null, '', `#${id}`)
+      }
+      for (const b of railButtons) b.addEventListener('click', () => show(b.dataset.screen))
+      if (location.hash.length > 1) show(location.hash.slice(1), false)
+      window.addEventListener('hashchange', () => show(location.hash.slice(1), false))
+
+      // ── 主题切换（工具条上的按钮 + 设置里的卡片） ──
+      const applyTheme = (name) => {
+        document.documentElement.dataset.theme = name === 'system' ? 'daylight' : name
+        for (const card of document.querySelectorAll('.theme-card')) {
+          card.setAttribute('aria-pressed', String(card.dataset.themeBtn === name))
+        }
+      }
+      for (const b of document.querySelectorAll('[data-theme-btn]')) {
+        b.addEventListener('click', () => applyTheme(b.dataset.themeBtn))
+      }
+
+      // ── 审批卡：三个动作各自的后果（这是这一版设计要表达的交互） ──
+      const approval = document.getElementById('approval')
+      const actions = document.getElementById('approval-actions')
+      const countdown = document.getElementById('approval-countdown')
+      const toolChip = document.getElementById('tool-chip')
+      const DECIDED = {
+        'allow-once': ['已处理：仅允许这一次', '✓ 完成'],
+        'allow-always': ['已处理：始终允许此操作（参数相同的调用不再询问）', '✓ 完成'],
+        deny: ['已处理：拒绝', '✕ 已拒绝'],
+      }
+      let remaining = 292
+      const tick = setInterval(() => {
+        remaining -= 1
+        if (remaining <= 0) {
+          clearInterval(tick)
+          countdown.textContent = '已超时（按「拒绝」处理），这一步没有执行'
+          return
+        }
+        const m = Math.floor(remaining / 60)
+        const s = String(remaining % 60).padStart(2, '0')
+        countdown.textContent = `还有 ${m} 分 ${s} 秒超时 · 超时按「拒绝」处理，这一步不会执行，其余步骤继续`
+      }, 1000)
+
+      for (const b of actions.querySelectorAll('button')) {
+        b.addEventListener('click', () => {
+          const [text, chip] = DECIDED[b.dataset.decide]
+          clearInterval(tick)
+          actions.innerHTML = `<p style="font-size:12px;color:var(--c-muted);margin:0">${text}</p>`
+          countdown.textContent =
+            b.dataset.decide === 'deny'
+              ? '你拒绝了这一步：agent 会收到拒绝原因，然后继续做剩下的部分'
+              : '按你授予的范围执行；参数不同的调用会重新询问'
+          toolChip.className = b.dataset.decide === 'deny' ? 'chip chip-danger' : 'chip chip-ok'
+          toolChip.textContent = chip
+        })
+      }
+    </script>
+  </body>
+</html>

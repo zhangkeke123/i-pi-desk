@@ -1,0 +1,530 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>i-pi-desk · 工作台视觉稿</title>
+    <style>
+      :root {
+        --canvas: #f4f6f9;
+        --surface: #ffffff;
+        --surface-2: #eef1f5;
+        --border: #d8dee6;
+        --ink: #1e2430;
+        --ink-soft: #4a5568;
+        --muted: #7a8494;
+        --accent: #3d8fa3;
+        --accent-soft: #e8f4f7;
+        --sidebar: #f0f3f7;
+        --rail: #e8ecf1;
+        --shadow: 0 1px 0 rgba(30, 36, 48, 0.06);
+        --r: 6px;
+        --font: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+        --mono: "Cascadia Mono", "Consolas", monospace;
+      }
+      * { box-sizing: border-box; }
+      html, body { height: 100%; margin: 0; }
+      body {
+        font-family: var(--font);
+        background: #dfe5ec;
+        color: var(--ink);
+        display: grid;
+        place-items: start center;
+        padding: 28px 20px 48px;
+        gap: 20px;
+      }
+      h1 {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+        color: var(--ink-soft);
+      }
+      .note {
+        max-width: 1120px;
+        width: 100%;
+        font-size: 12.5px;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+      .tabs {
+        display: flex;
+        gap: 8px;
+        max-width: 1120px;
+        width: 100%;
+      }
+      .tabs button {
+        border: 1px solid #c9d2dc;
+        background: #fff;
+        color: var(--ink-soft);
+        border-radius: 999px;
+        padding: 6px 14px;
+        font-size: 12px;
+        cursor: pointer;
+      }
+      .tabs button[aria-selected="true"] {
+        background: var(--ink);
+        color: #fff;
+        border-color: var(--ink);
+      }
+      .frame {
+        width: min(1120px, 100%);
+        height: min(680px, 78vh);
+        background: var(--canvas);
+        border: 1px solid #c5ced8;
+        border-radius: 12px;
+        overflow: hidden;
+        display: grid;
+        grid-template-columns: 48px 248px 1fr;
+        box-shadow: 0 18px 50px -28px rgba(20, 30, 45, 0.35);
+      }
+      /* rail */
+      .rail {
+        background: var(--rail);
+        border-right: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 10px 0 12px;
+        gap: 6px;
+      }
+      .rail .ico {
+        width: 34px;
+        height: 34px;
+        border-radius: 8px;
+        display: grid;
+        place-items: center;
+        color: var(--muted);
+        font-size: 11px;
+      }
+      .rail .ico[data-on] {
+        background: var(--surface);
+        color: var(--ink);
+        box-shadow: var(--shadow);
+      }
+      .rail .spacer { flex: 1; }
+      /* session pane */
+      .pane {
+        background: var(--sidebar);
+        border-right: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+      }
+      .pane-top { padding: 12px 10px 8px; display: grid; gap: 6px; }
+      .btn {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        height: 32px;
+        padding: 0 10px;
+        border-radius: var(--r);
+        font-size: 12.5px;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        color: var(--ink);
+        cursor: default;
+      }
+      .btn.ghost {
+        background: transparent;
+        color: var(--ink-soft);
+        border-style: dashed;
+      }
+      .proj {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        height: 28px;
+        padding: 0 8px;
+        border-radius: var(--r);
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .proj b { color: var(--ink-soft); font-weight: 500; }
+      .sec {
+        padding: 10px 12px 4px;
+        font-family: var(--mono);
+        font-size: 10px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .row {
+        margin: 1px 8px;
+        padding: 7px 8px;
+        border-radius: 6px;
+        font-size: 12px;
+        color: var(--ink-soft);
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        min-width: 0;
+      }
+      .row span { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .row em { font-style: normal; font-family: var(--mono); font-size: 10px; color: var(--muted); }
+      .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+      .dot.muted { background: #c5ccd6; }
+      /* main */
+      .main {
+        display: grid;
+        grid-template-rows: 40px 1fr auto;
+        min-width: 0;
+        background: var(--canvas);
+      }
+      .hdr {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 0 14px;
+        border-bottom: 1px solid var(--border);
+        background: color-mix(in srgb, var(--canvas) 70%, #fff);
+        font-size: 12.5px;
+      }
+      .hdr .path { color: var(--muted); font-family: var(--mono); font-size: 11px; }
+      .hdr .grow { flex: 1; }
+      .hdr .tool {
+        width: 28px; height: 26px; border-radius: 5px;
+        display: grid; place-items: center; color: var(--muted); font-size: 12px;
+      }
+      .stage {
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        overflow: auto;
+      }
+      /* ===== EMPTY STATE (new) ===== */
+      .home {
+        width: min(560px, 100%);
+        display: grid;
+        gap: 18px;
+      }
+      .home h2 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 600;
+        letter-spacing: -0.03em;
+      }
+      .home p.lead {
+        margin: 4px 0 0;
+        font-size: 13px;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+      .cta {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        height: 36px;
+        padding: 0 14px;
+        border: 0;
+        border-radius: var(--r);
+        background: var(--ink);
+        color: #fff;
+        font-size: 13px;
+        width: fit-content;
+      }
+      .cards {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 10px 12px;
+        min-height: 120px;
+      }
+      .card h3 {
+        margin: 0 0 8px;
+        font-size: 11px;
+        font-family: var(--mono);
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--muted);
+        font-weight: 500;
+      }
+      .item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 0;
+        border-top: 1px solid #eef1f5;
+        font-size: 12.5px;
+        color: var(--ink-soft);
+      }
+      .item:first-of-type { border-top: 0; }
+      .item small { margin-left: auto; color: var(--muted); font-family: var(--mono); font-size: 10px; }
+      .hint-line {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      .chip {
+        height: 26px;
+        padding: 0 10px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        color: var(--ink-soft);
+        font-size: 11.5px;
+        display: inline-flex;
+        align-items: center;
+      }
+      /* ===== WITH WORKSPACE ===== */
+      .work {
+        width: min(720px, 100%);
+        align-self: stretch;
+        justify-self: stretch;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        padding-top: 8px;
+      }
+      .turn {
+        display: grid;
+        gap: 4px;
+        max-width: 640px;
+      }
+      .turn .who {
+        font-size: 11px;
+        color: var(--muted);
+        font-family: var(--mono);
+      }
+      .bubble {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 10px 12px;
+        font-size: 13px;
+        line-height: 1.55;
+        color: var(--ink-soft);
+      }
+      .bubble.user { background: var(--accent-soft); border-color: #cfe3e9; color: var(--ink); }
+      .aside-tip {
+        margin-left: auto;
+        font-size: 11px;
+        color: var(--muted);
+        border: 1px dashed var(--border);
+        border-radius: 6px;
+        padding: 6px 8px;
+        background: transparent;
+        max-width: 180px;
+      }
+      /* composer */
+      .composer-wrap {
+        padding: 0 16px 14px;
+        background: linear-gradient(to top, var(--canvas) 70%, transparent);
+      }
+      .blocker {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 8px;
+        padding: 7px 10px;
+        border-radius: var(--r);
+        border: 1px solid var(--border);
+        background: var(--surface-2);
+        color: var(--ink-soft);
+        font-size: 11.5px;
+      }
+      .blocker a { margin-left: auto; color: var(--ink); font-weight: 500; text-decoration: underline; text-underline-offset: 2px; }
+      .box {
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--surface);
+        box-shadow: var(--shadow);
+        padding: 8px 10px 8px;
+      }
+      .box .ph { color: var(--muted); font-size: 13px; min-height: 40px; padding: 4px 2px 8px; }
+      .foot { display: flex; align-items: center; gap: 6px; }
+      .pill {
+        height: 24px; padding: 0 8px; border-radius: 999px;
+        border: 1px solid var(--border); background: var(--surface-2);
+        color: var(--muted); font-size: 11px; display: inline-flex; align-items: center;
+      }
+      .send {
+        margin-left: auto; width: 28px; height: 28px; border-radius: 50%;
+        background: var(--ink); color: #fff; display: grid; place-items: center; font-size: 13px;
+      }
+      .view { display: none; width: 100%; height: 100%; }
+      .view.on { display: contents; }
+      .stage .view.on { display: grid; }
+      .compare {
+        max-width: 1120px;
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+      @media (max-width: 900px) {
+        .compare { grid-template-columns: 1fr; }
+        .cards { grid-template-columns: 1fr; }
+      }
+      .mini {
+        background: #fff;
+        border: 1px solid #c5ced8;
+        border-radius: 10px;
+        padding: 12px;
+        font-size: 12px;
+        color: var(--ink-soft);
+        line-height: 1.55;
+      }
+      .mini strong { display: block; margin-bottom: 6px; color: var(--ink); font-size: 12.5px; }
+      .mini .bad { color: #a35b3d; }
+      .mini .good { color: var(--accent); }
+    </style>
+  </head>
+  <body>
+    <div style="max-width:1120px;width:100%;display:grid;gap:8px">
+      <h1>工作台视觉稿 · 一眼对比</h1>
+      <p class="note">
+        参考 Modus / Copilot App：中区是控制台，不是海报。无目录时给「最近目录 + 最近会话」；有目录时直接进入对话。
+      </p>
+      <div class="tabs" role="tablist">
+        <button type="button" id="tab-empty" aria-selected="true">A · 未选目录（新）</button>
+        <button type="button" id="tab-work" aria-selected="false">B · 已选目录</button>
+      </div>
+    </div>
+
+    <div class="frame" id="frame" aria-label="工作台 mock">
+      <aside class="rail">
+        <div class="ico" data-on title="工作台">⌂</div>
+        <div class="ico" title="定时">◷</div>
+        <div class="ico" title="项目">▤</div>
+        <div class="spacer"></div>
+        <div class="ico" title="设置">⚙</div>
+      </aside>
+
+      <aside class="pane">
+        <div class="pane-top">
+          <div class="btn">⚡ 快捷会话</div>
+          <div class="btn ghost">＋ 新会话</div>
+          <div class="proj">📁 <b id="proj-label">选择项目</b> ▾</div>
+        </div>
+        <div class="sec">置顶</div>
+        <div class="row"><div class="dot"></div><span>排查网关切流</span><em>2天</em></div>
+        <div class="sec">最近</div>
+        <div class="row"><div class="dot muted"></div><span>帮我在 src 下新建 utils.ts</span><em>刚刚</em></div>
+        <div class="row"><div class="dot muted"></div><span>业务系统字段配置</span><em>昨天</em></div>
+      </aside>
+
+      <section class="main">
+        <header class="hdr">
+          <span id="hdr-title">未选择工作目录</span>
+          <span class="path" id="hdr-path"></span>
+          <div class="grow"></div>
+          <div class="tool">⌃</div>
+          <div class="tool">⌕</div>
+          <div class="tool">▥</div>
+        </header>
+
+        <div class="stage">
+          <!-- A: empty home -->
+          <div class="view on" id="view-empty">
+            <div class="home">
+              <div>
+                <h2>选择工作区，开始一轮任务</h2>
+                <p class="lead">工作台是驾驶舱：选目录 → 对话 → 右侧看 Diff / 文件 / 终端。</p>
+              </div>
+              <button class="cta" type="button">📁 选择工作目录</button>
+              <div class="cards">
+                <div class="card">
+                  <h3>最近目录</h3>
+                  <div class="item">a3-lib <small>本地</small></div>
+                  <div class="item">a3-expert-square <small>2天前</small></div>
+                  <div class="item">i-pi-desk <small>上周</small></div>
+                </div>
+                <div class="card">
+                  <h3>最近会话</h3>
+                  <div class="item">排查网关切流 <small>置顶</small></div>
+                  <div class="item">新建 utils.ts <small>今天</small></div>
+                  <div class="item">字段配置 SQL <small>昨天</small></div>
+                </div>
+              </div>
+              <div class="hint-line">
+                <span class="chip">过一遍项目结构</span>
+                <span class="chip">找出 TODO</span>
+                <span class="chip">小功能要改哪些文件</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- B: working -->
+          <div class="view" id="view-work">
+            <div class="work">
+              <div style="display:flex;gap:12px;align-items:flex-start">
+                <div style="flex:1;display:grid;gap:14px">
+                  <div class="turn">
+                    <div class="who">你</div>
+                    <div class="bubble user">帮我过一遍这个项目的目录结构，标出前后端入口。</div>
+                  </div>
+                  <div class="turn">
+                    <div class="who">助手 · 进行中</div>
+                    <div class="bubble">先看仓库根目录与 package / 模块划分，再标出前端 `src` 与后端启动入口……</div>
+                  </div>
+                </div>
+                <div class="aside-tip">右侧可开<br/>审阅 · 文件 · 终端</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="composer-wrap">
+          <div class="blocker" id="blocker">
+            还没有工作目录，agent 不知道该落在哪
+            <a>选择目录</a>
+          </div>
+          <div class="box">
+            <div class="ph">随心输入…</div>
+            <div class="foot">
+              <span class="pill" id="pill-ws">未选目录</span>
+              <span class="pill">模型</span>
+              <span class="pill">每次询问</span>
+              <div class="send">↑</div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="compare">
+      <div class="mini">
+        <strong class="bad">现在（截图）</strong>
+        巨型标题「我们要构建什么？」占满中心 · 三条长建议抢视线 · 像海报，不像工作台
+      </div>
+      <div class="mini">
+        <strong class="good">这一版</strong>
+        短标题 + 一个主按钮 · 最近目录/会话两列卡片 · 建议收成 chip · 有目录后直接进对话
+      </div>
+    </div>
+
+    <script>
+      const tabEmpty = document.getElementById('tab-empty')
+      const tabWork = document.getElementById('tab-work')
+      const viewEmpty = document.getElementById('view-empty')
+      const viewWork = document.getElementById('view-work')
+      const blocker = document.getElementById('blocker')
+      const hdrTitle = document.getElementById('hdr-title')
+      const hdrPath = document.getElementById('hdr-path')
+      const projLabel = document.getElementById('proj-label')
+      const pillWs = document.getElementById('pill-ws')
+
+      function show(mode) {
+        const empty = mode === 'empty'
+        tabEmpty.setAttribute('aria-selected', empty ? 'true' : 'false')
+        tabWork.setAttribute('aria-selected', empty ? 'false' : 'true')
+        viewEmpty.classList.toggle('on', empty)
+        viewWork.classList.toggle('on', !empty)
+        blocker.style.display = empty ? 'flex' : 'none'
+        hdrTitle.textContent = empty ? '未选择工作目录' : 'a3-lib'
+        hdrPath.textContent = empty ? '' : 'D:\\\\work\\\\code\\\\shudao\\\\a3-lib'
+        projLabel.textContent = empty ? '选择项目' : 'a3-lib'
+        pillWs.textContent = empty ? '未选目录' : 'a3-lib'
+      }
+      tabEmpty.onclick = () => show('empty')
+      tabWork.onclick = () => show('work')
+    </script>
+  </body>
+</html>

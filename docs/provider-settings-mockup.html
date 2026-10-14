@@ -1,0 +1,739 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="daylight">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>i-pi-desk · 模型 provider 设置（设计稿）</title>
+    <style>
+      :root,
+      :root[data-theme='daylight'] {
+        color-scheme: light;
+        --c-canvas: oklch(0.975 0.006 85);
+        --c-surface: oklch(0.998 0.003 85);
+        --c-surface-2: oklch(0.962 0.007 85);
+        --c-surface-3: oklch(0.935 0.009 85);
+        --c-border: oklch(0.9 0.01 85);
+        --c-border-strong: oklch(0.82 0.014 85);
+        --c-ink: oklch(0.235 0.014 70);
+        --c-ink-soft: oklch(0.37 0.015 70);
+        --c-muted: oklch(0.53 0.016 75);
+        --c-accent: oklch(0.52 0.115 55);
+        --c-accent-soft: oklch(0.945 0.028 62);
+        --c-ok: oklch(0.52 0.1 150);
+        --c-ok-soft: oklch(0.95 0.026 150);
+        --c-warn: oklch(0.62 0.12 70);
+        --c-action: oklch(0.3 0.014 70);
+        --c-action-ink: oklch(0.99 0.004 85);
+        --c-overlay: oklch(0.32 0.014 70 / 0.36);
+        --c-sidebar: oklch(0.955 0.008 85);
+        --radius: 5px;
+        --shadow-md: 0 2px 6px -2px oklch(0.5 0.02 70 / 0.16);
+        --shadow-lg: 0 16px 40px -18px oklch(0.5 0.02 70 / 0.26);
+        --font: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+        --mono: ui-monospace, 'Cascadia Code', Consolas, monospace;
+      }
+      :root[data-theme='midnight'] {
+        color-scheme: dark;
+        --c-canvas: oklch(0.165 0.006 70);
+        --c-surface: oklch(0.206 0.007 70);
+        --c-surface-2: oklch(0.246 0.008 70);
+        --c-surface-3: oklch(0.291 0.009 70);
+        --c-border: oklch(1 0 0 / 0.13);
+        --c-border-strong: oklch(1 0 0 / 0.26);
+        --c-ink: oklch(0.938 0.012 85);
+        --c-ink-soft: oklch(0.82 0.013 85);
+        --c-muted: oklch(0.664 0.015 80);
+        --c-accent: oklch(0.72 0.128 62);
+        --c-accent-soft: oklch(0.279 0.042 62);
+        --c-ok: oklch(0.72 0.11 150);
+        --c-ok-soft: oklch(0.28 0.048 150);
+        --c-warn: oklch(0.8 0.12 80);
+        --c-action: oklch(0.93 0.008 85);
+        --c-action-ink: oklch(0.18 0.012 70);
+        --c-overlay: oklch(0.09 0.006 70 / 0.64);
+        --c-sidebar: oklch(0.182 0.006 70);
+      }
+      * { box-sizing: border-box; }
+      html, body { height: 100%; margin: 0; }
+      body {
+        font: 13px/1.45 var(--font);
+        color: var(--c-ink);
+        background: var(--c-canvas);
+      }
+      button, input, select { font: inherit; color: inherit; }
+      button { cursor: pointer; }
+
+      .stage-bar {
+        display: flex; align-items: center; gap: 8px;
+        padding: 10px 16px; border-bottom: 1px solid var(--c-border);
+        background: var(--c-surface);
+        position: sticky; top: 0; z-index: 20;
+      }
+      .stage-bar h1 { margin: 0; font-size: 13px; font-weight: 600; }
+      .stage-bar .hint { color: var(--c-muted); font-size: 12px; margin-left: 4px; }
+      .theme-btn {
+        margin-left: auto;
+        border: 1px solid var(--c-border); background: transparent;
+        border-radius: var(--radius); padding: 5px 8px; font-size: 11px; color: var(--c-muted);
+      }
+
+      .settings {
+        display: grid;
+        grid-template-columns: 220px 1fr;
+        height: calc(100% - 45px);
+      }
+      .settings-nav {
+        border-right: 1px solid var(--c-border);
+        background: color-mix(in oklch, var(--c-surface) 60%, var(--c-canvas));
+        padding: 12px;
+        display: flex; flex-direction: column;
+      }
+      .nav-search {
+        height: 32px; width: 100%; border-radius: var(--radius);
+        border: 1px solid var(--c-border); background: var(--c-surface);
+        padding: 0 10px; margin-bottom: 12px; color: var(--c-muted);
+      }
+      .nav-group { margin-bottom: 14px; }
+      .nav-group > p {
+        margin: 0 0 4px; padding: 2px 10px;
+        font-size: 10.5px; font-weight: 500; color: var(--c-muted); letter-spacing: 0.02em;
+      }
+      .nav-item {
+        display: flex; align-items: center; gap: 8px;
+        width: 100%; text-align: left;
+        border: 0; background: transparent;
+        border-radius: var(--radius);
+        padding: 8px 10px; color: var(--c-ink-soft);
+      }
+      .nav-item[aria-current='page'] {
+        background: var(--c-surface-2); color: var(--c-ink); font-weight: 600;
+      }
+      .nav-item .dot {
+        width: 6px; height: 6px; border-radius: 50%;
+        background: var(--c-accent);
+      }
+      .nav-back {
+        margin-top: auto; border-top: 1px solid var(--c-border);
+        padding-top: 10px;
+      }
+      .nav-back button {
+        width: 100%; text-align: left; border: 0; background: transparent;
+        padding: 8px 10px; border-radius: var(--radius); color: var(--c-ink-soft);
+      }
+      .nav-back button:hover { background: var(--c-surface-2); }
+
+      .settings-main {
+        overflow: auto;
+        background: var(--c-canvas);
+        padding: 24px 28px 48px;
+      }
+      .pane-title {
+        margin: 0 0 14px;
+        font-size: 18px; font-weight: 650; letter-spacing: -0.02em;
+      }
+
+      .detail-shell {
+        display: grid;
+        grid-template-columns: 200px 1fr;
+        border: 1px solid var(--c-border);
+        border-radius: calc(var(--radius) + 3px);
+        overflow: hidden;
+        background: var(--c-surface);
+        min-height: 560px;
+        box-shadow: var(--shadow-md);
+      }
+      .detail-side {
+        border-right: 1px solid var(--c-border);
+        background: var(--c-sidebar);
+        padding: 12px 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .side-group > p {
+        margin: 8px 6px 6px; font-size: 10.5px; color: var(--c-muted); font-weight: 500;
+      }
+      .side-item {
+        display: flex; align-items: center; gap: 8px;
+        width: 100%; text-align: left;
+        border: 0; background: transparent;
+        border-radius: var(--radius);
+        padding: 8px 8px; color: var(--c-ink-soft); font-size: 12.5px;
+      }
+      .side-item:hover { background: color-mix(in oklch, var(--c-surface-2) 70%, transparent); }
+      .side-item[aria-current='true'] {
+        background: var(--c-surface-2); color: var(--c-ink); font-weight: 600;
+      }
+      .side-item .status {
+        width: 7px; height: 7px; border-radius: 50%; margin-left: auto;
+        background: var(--c-ok); flex-shrink: 0;
+      }
+      .side-item .status.warn { background: var(--c-warn); }
+      .side-add {
+        margin-top: auto;
+        width: 100%;
+        height: 30px;
+        border: 1px dashed var(--c-border-strong);
+        border-radius: var(--radius);
+        background: transparent;
+        color: var(--c-muted);
+        font-size: 12px;
+      }
+      .side-add:hover { color: var(--c-ink); border-color: var(--c-ink-soft); }
+
+      .detail-body {
+        padding: 18px 20px 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        min-width: 0;
+      }
+      .dh {
+        display: flex; align-items: center; gap: 10px;
+        padding-bottom: 12px; border-bottom: 1px solid var(--c-border);
+      }
+      .dh-icon {
+        width: 32px; height: 32px; border-radius: 8px;
+        background: var(--c-surface-2); border: 1px solid var(--c-border);
+        display: grid; place-items: center; color: var(--c-muted);
+      }
+      .dh-name { font-size: 15px; font-weight: 650; }
+      .dh-actions { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+      .toggle {
+        width: 36px; height: 20px; border-radius: 999px;
+        border: 0; background: var(--c-border-strong); position: relative;
+        transition: background .15s;
+      }
+      .toggle.on { background: var(--c-accent); }
+      .toggle::after {
+        content: ''; position: absolute; top: 2px; left: 2px;
+        width: 16px; height: 16px; border-radius: 50%; background: white;
+        transition: transform .15s;
+      }
+      .toggle.on::after { transform: translateX(16px); }
+      .more {
+        width: 28px; height: 28px; border-radius: var(--radius);
+        border: 1px solid var(--c-border); background: transparent; color: var(--c-muted);
+      }
+
+      .field-block label {
+        display: block; font-size: 12px; color: var(--c-ink-soft); margin-bottom: 6px;
+      }
+      .field {
+        width: 100%; height: 34px;
+        border: 1px solid var(--c-border); border-radius: var(--radius);
+        background: var(--c-surface-2); padding: 0 10px;
+      }
+      .field:focus {
+        outline: 2px solid color-mix(in oklch, var(--c-accent) 35%, transparent);
+        border-color: var(--c-accent);
+      }
+      .field.mono { font-family: var(--mono); font-size: 12px; }
+      .key-wrap { position: relative; }
+      .key-wrap .eye {
+        position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+        border: 0; background: transparent; color: var(--c-muted); padding: 4px;
+      }
+
+      .models-section { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+      .models-head {
+        display: flex; align-items: center; justify-content: space-between;
+        margin-top: 4px;
+      }
+      .models-head h3 { margin: 0; font-size: 13px; font-weight: 600; }
+      .add-model {
+        height: 28px; padding: 0 10px;
+        border-radius: var(--radius);
+        border: 1px solid var(--c-border);
+        background: var(--c-surface);
+        font-size: 12px; color: var(--c-ink-soft);
+        display: inline-flex; align-items: center; gap: 4px;
+      }
+      .add-model:hover { border-color: var(--c-border-strong); color: var(--c-ink); }
+      .models-empty {
+        margin-top: 10px;
+        border: 1px dashed var(--c-border-strong);
+        border-radius: calc(var(--radius) + 2px);
+        padding: 36px 20px;
+        text-align: center; color: var(--c-muted); font-size: 12.5px;
+        background: color-mix(in oklch, var(--c-surface-2) 50%, transparent);
+        flex: 1;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+      }
+      .models-empty .ico {
+        width: 28px; height: 28px; margin: 0 auto 10px;
+        border-radius: 50%; background: var(--c-surface-2);
+        display: grid; place-items: center; color: var(--c-muted); font-size: 13px;
+      }
+      .model-list { margin-top: 10px; display: grid; gap: 6px; }
+      .model-row {
+        display: flex; align-items: center; gap: 8px;
+        border: 1px solid var(--c-border); border-radius: var(--radius);
+        padding: 8px 10px; background: var(--c-surface-2);
+      }
+      .model-row .mid { font-family: var(--mono); font-size: 12px; flex: 1; min-width: 0; }
+      .model-row .mlabel { font-size: 11.5px; color: var(--c-muted); }
+      .model-row .del {
+        border: 0; background: transparent; color: var(--c-muted); padding: 4px;
+      }
+      .model-row .del:hover { color: var(--c-ink); }
+
+      .footer-actions {
+        display: flex; align-items: center; gap: 8px; margin-top: auto; padding-top: 8px;
+      }
+      .footer-status {
+        margin-left: auto;
+        font-size: 12px;
+        color: var(--c-muted);
+        min-height: 18px;
+      }
+      .footer-status.ok { color: var(--c-ok); }
+      .footer-status.warn { color: var(--c-accent); }
+      .btn {
+        height: 32px; padding: 0 12px; border-radius: var(--radius);
+        border: 1px solid var(--c-border); background: var(--c-surface); font-size: 12.5px;
+      }
+      .btn:hover { border-color: var(--c-border-strong); }
+      .btn:disabled { opacity: 0.55; cursor: default; }
+      .btn-primary {
+        background: var(--c-action); color: var(--c-action-ink); border-color: transparent;
+        font-weight: 600;
+      }
+      .btn-primary:hover { filter: brightness(1.05); }
+
+      .modal-root {
+        display: none; position: fixed; inset: 0; z-index: 40;
+        background: var(--c-overlay);
+        align-items: center; justify-content: center;
+      }
+      .modal-root.open { display: flex; }
+      .modal {
+        width: min(420px, calc(100vw - 32px));
+        background: var(--c-surface);
+        border: 1px solid var(--c-border);
+        border-radius: calc(var(--radius) + 4px);
+        box-shadow: var(--shadow-lg);
+        padding: 16px 16px 14px;
+      }
+      .modal h4 { margin: 0 0 4px; font-size: 14px; }
+      .modal p.sub { margin: 0 0 14px; font-size: 12px; color: var(--c-muted); }
+      .modal .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+      .modal-error { margin-top: 8px; font-size: 12px; color: var(--c-accent); min-height: 16px; }
+
+      .toast {
+        position: fixed;
+        bottom: 28px;
+        left: 50%;
+        transform: translateX(-50%) translateY(12px);
+        z-index: 50;
+        padding: 10px 16px;
+        border-radius: calc(var(--radius) + 2px);
+        background: var(--c-ink);
+        color: var(--c-action-ink);
+        font-size: 12.5px;
+        box-shadow: var(--shadow-lg);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity .18s, transform .18s;
+      }
+      .toast.show {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
+      .toast.ok { background: var(--c-ok); color: white; }
+
+      .hidden { display: none !important; }
+    </style>
+  </head>
+  <body>
+    <div class="stage-bar">
+      <h1>模型 provider · 设计稿</h1>
+      <span class="hint">仅 L2：左供应商 · 右基础信息 + 模型列表</span>
+      <button type="button" class="theme-btn" id="themeToggle">切 Midnight</button>
+    </div>
+
+    <div class="settings">
+      <aside class="settings-nav">
+        <input class="nav-search" readonly value="搜索设置…" />
+        <div class="nav-group">
+          <p>偏好</p>
+          <button type="button" class="nav-item">通用</button>
+          <button type="button" class="nav-item">AI</button>
+          <button type="button" class="nav-item">外观</button>
+        </div>
+        <div class="nav-group">
+          <p>智能体</p>
+          <button type="button" class="nav-item" aria-current="page"><span class="dot"></span>模型 provider</button>
+          <button type="button" class="nav-item">技能</button>
+          <button type="button" class="nav-item">MCP</button>
+          <button type="button" class="nav-item">子智能体</button>
+        </div>
+        <div class="nav-back">
+          <button type="button">‹ 返回应用</button>
+        </div>
+      </aside>
+
+      <main class="settings-main">
+        <h2 class="pane-title">模型 provider</h2>
+
+        <div class="detail-shell">
+          <aside class="detail-side" id="providerList">
+            <div class="side-group">
+              <p>本机 / 内网</p>
+              <button type="button" class="side-item" data-id="ollama" aria-current="true">
+                Ollama <span class="status" title="可用"></span>
+              </button>
+              <button type="button" class="side-item" data-id="intranet">
+                内网推理服务 <span class="status warn" title="未配置模型"></span>
+              </button>
+            </div>
+            <div class="side-group">
+              <p>云服务</p>
+              <button type="button" class="side-item" data-id="deepseek">
+                DeepSeek <span class="status" title="可用"></span>
+              </button>
+              <button type="button" class="side-item" data-id="gateway">
+                公司网关 <span class="status warn" title="控制面下发"></span>
+              </button>
+            </div>
+            <button type="button" class="side-add" id="addProvider" title="演示：添加供应商">＋ 添加供应商</button>
+          </aside>
+
+          <div class="detail-body">
+            <div class="dh">
+              <span class="dh-icon" id="dhIcon">⬡</span>
+              <span class="dh-name" id="dhName">Ollama</span>
+              <div class="dh-actions">
+                <button type="button" class="toggle on" id="enableToggle" title="启用" aria-label="启用" aria-pressed="true"></button>
+                <button type="button" class="more" title="更多">⋯</button>
+              </div>
+            </div>
+
+            <div class="field-block">
+              <label for="baseUrl">Base URL</label>
+              <input id="baseUrl" class="field mono" />
+            </div>
+            <div class="field-block">
+              <label for="apiFormat">API 格式</label>
+              <select id="apiFormat" class="field">
+                <option value="openai-completions">OpenAI Chat Completions</option>
+                <option value="openai-responses">OpenAI Responses</option>
+                <option value="anthropic-messages">Anthropic Messages</option>
+              </select>
+            </div>
+            <div class="field-block">
+              <label for="apiKey">API Key</label>
+              <div class="key-wrap">
+                <input id="apiKey" class="field mono" type="password" />
+                <button type="button" class="eye" id="toggleKey" title="显示/隐藏" tabindex="-1">👁</button>
+              </div>
+            </div>
+
+            <div class="models-section">
+              <div class="models-head">
+                <h3>模型列表</h3>
+                <button type="button" class="add-model" id="openAdd">＋ 添加模型</button>
+              </div>
+
+              <div id="modelsEmpty" class="models-empty hidden">
+                <div class="ico">ℹ</div>
+                当前没有配置模型，添加模型后可在聊天中使用。
+              </div>
+              <div id="modelList" class="model-list"></div>
+            </div>
+
+            <div class="footer-actions">
+              <button type="button" class="btn" id="btnTest">测试连接</button>
+              <button type="button" class="btn btn-primary" id="btnSave">保存</button>
+              <span class="footer-status" id="footerStatus" aria-live="polite"></span>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <div class="modal-root" id="addModal" role="dialog" aria-modal="true" aria-labelledby="addTitle">
+      <div class="modal">
+        <h4 id="addTitle">添加模型</h4>
+        <p class="sub">写入当前供应商的模型列表；仍需点「保存」才会落盘。</p>
+        <div class="field-block">
+          <label for="modelId">模型 id <span style="color:var(--c-muted)">（必填）</span></label>
+          <input id="modelId" class="field mono" placeholder="例如 qwen2.5-coder:7b" />
+        </div>
+        <div class="field-block" style="margin-top:10px">
+          <label for="modelLabel">显示名 <span style="color:var(--c-muted)">（可选）</span></label>
+          <input id="modelLabel" class="field" placeholder="聊天里展示的名字" />
+        </div>
+        <div class="modal-error" id="modalError"></div>
+        <div class="actions">
+          <button type="button" class="btn" id="closeAdd">取消</button>
+          <button type="button" class="btn btn-primary" id="confirmAdd">添加</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <script>
+      const providers = {
+        ollama: {
+          name: 'Ollama',
+          icon: '⬡',
+          enabled: true,
+          baseUrl: 'http://localhost:11434/v1',
+          format: 'openai-completions',
+          apiKey: '',
+          keyPlaceholder: '本机可留空',
+          models: [
+            { id: 'qwen2.5-coder:7b', label: '' },
+            { id: 'deepseek-r1:8b', label: 'Reasoning' }
+          ]
+        },
+        intranet: {
+          name: '内网推理服务',
+          icon: '⬡',
+          enabled: true,
+          baseUrl: 'http://10.0.0.10:8000/v1',
+          format: 'openai-completions',
+          apiKey: 'sk-demo',
+          keyPlaceholder: '',
+          models: []
+        },
+        deepseek: {
+          name: 'DeepSeek',
+          icon: '☁',
+          enabled: true,
+          baseUrl: 'https://api.deepseek.com/v1',
+          format: 'openai-completions',
+          apiKey: 'sk-••••••••',
+          keyPlaceholder: '',
+          models: [
+            { id: 'deepseek-chat', label: '对话' },
+            { id: 'deepseek-reasoner', label: '推理' }
+          ]
+        },
+        gateway: {
+          name: '公司网关',
+          icon: '☁',
+          enabled: false,
+          baseUrl: 'https://llm.corp.example/v1',
+          format: 'anthropic-messages',
+          apiKey: '',
+          keyPlaceholder: '由控制面下发',
+          models: [
+            { id: 'claude-sonnet-4', label: 'Sonnet' },
+            { id: 'claude-opus-4', label: 'Opus' },
+            { id: 'claude-haiku-4', label: 'Haiku' }
+          ]
+        }
+      }
+
+      let currentId = 'ollama'
+      let statusTimer = null
+      let toastTimer = null
+
+      const el = {
+        dhIcon: document.getElementById('dhIcon'),
+        dhName: document.getElementById('dhName'),
+        enableToggle: document.getElementById('enableToggle'),
+        baseUrl: document.getElementById('baseUrl'),
+        apiFormat: document.getElementById('apiFormat'),
+        apiKey: document.getElementById('apiKey'),
+        modelsEmpty: document.getElementById('modelsEmpty'),
+        modelList: document.getElementById('modelList'),
+        footerStatus: document.getElementById('footerStatus'),
+        toast: document.getElementById('toast'),
+        modal: document.getElementById('addModal'),
+        modelId: document.getElementById('modelId'),
+        modelLabel: document.getElementById('modelLabel'),
+        modalError: document.getElementById('modalError'),
+        btnTest: document.getElementById('btnTest'),
+        btnSave: document.getElementById('btnSave')
+      }
+
+      function showToast(message, ok) {
+        el.toast.textContent = message
+        el.toast.classList.toggle('ok', !!ok)
+        el.toast.classList.add('show')
+        clearTimeout(toastTimer)
+        toastTimer = setTimeout(() => el.toast.classList.remove('show'), 2200)
+      }
+
+      function setFooterStatus(message, kind) {
+        el.footerStatus.textContent = message || ''
+        el.footerStatus.classList.remove('ok', 'warn')
+        if (kind) el.footerStatus.classList.add(kind)
+        clearTimeout(statusTimer)
+        if (message) {
+          statusTimer = setTimeout(() => {
+            el.footerStatus.textContent = ''
+            el.footerStatus.classList.remove('ok', 'warn')
+          }, 3200)
+        }
+      }
+
+      function renderModels(p) {
+        const models = p.models
+        if (!models.length) {
+          el.modelsEmpty.classList.remove('hidden')
+          el.modelList.classList.add('hidden')
+          el.modelList.innerHTML = ''
+          return
+        }
+        el.modelsEmpty.classList.add('hidden')
+        el.modelList.classList.remove('hidden')
+        el.modelList.innerHTML = models
+          .map(
+            (m, i) => `
+          <div class="model-row" data-index="${i}">
+            <span class="mid">${escapeHtml(m.id)}</span>
+            <span class="mlabel">${escapeHtml(m.label || '可选显示名')}</span>
+            <button type="button" class="del" data-del="${i}" title="删除">🗑</button>
+          </div>`
+          )
+          .join('')
+      }
+
+      function escapeHtml(s) {
+        return String(s)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+      }
+
+      function selectProvider(id) {
+        currentId = id
+        const p = providers[id]
+        document.querySelectorAll('.side-item').forEach((btn) => {
+          btn.setAttribute('aria-current', btn.dataset.id === id ? 'true' : 'false')
+        })
+        el.dhIcon.textContent = p.icon
+        el.dhName.textContent = p.name
+        el.enableToggle.classList.toggle('on', p.enabled)
+        el.enableToggle.setAttribute('aria-pressed', p.enabled ? 'true' : 'false')
+        el.baseUrl.value = p.baseUrl
+        el.apiFormat.value = p.format
+        el.apiKey.value = p.apiKey
+        el.apiKey.placeholder = p.keyPlaceholder || ''
+        el.apiKey.type = 'password'
+        setFooterStatus('')
+        renderModels(p)
+      }
+
+      function syncFieldsToProvider() {
+        const p = providers[currentId]
+        p.baseUrl = el.baseUrl.value
+        p.format = el.apiFormat.value
+        p.apiKey = el.apiKey.value
+        p.enabled = el.enableToggle.classList.contains('on')
+      }
+
+      document.querySelectorAll('.side-item').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          syncFieldsToProvider()
+          selectProvider(btn.dataset.id)
+        })
+      })
+
+      el.enableToggle.addEventListener('click', () => {
+        const on = !el.enableToggle.classList.contains('on')
+        el.enableToggle.classList.toggle('on', on)
+        el.enableToggle.setAttribute('aria-pressed', on ? 'true' : 'false')
+        providers[currentId].enabled = on
+        setFooterStatus(on ? '已启用' : '已停用', on ? 'ok' : 'warn')
+      })
+
+      document.getElementById('toggleKey').addEventListener('click', () => {
+        el.apiKey.type = el.apiKey.type === 'password' ? 'text' : 'password'
+      })
+
+      el.modelList.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-del]')
+        if (!btn) return
+        const i = Number(btn.dataset.del)
+        providers[currentId].models.splice(i, 1)
+        renderModels(providers[currentId])
+        setFooterStatus('已移除模型（未保存）', 'warn')
+      })
+
+      const openModal = () => {
+        el.modelId.value = ''
+        el.modelLabel.value = ''
+        el.modalError.textContent = ''
+        el.modal.classList.add('open')
+        setTimeout(() => el.modelId.focus(), 30)
+      }
+      const closeModal = () => el.modal.classList.remove('open')
+
+      document.getElementById('openAdd').addEventListener('click', openModal)
+      document.getElementById('closeAdd').addEventListener('click', closeModal)
+      el.modal.addEventListener('click', (e) => {
+        if (e.target === el.modal) closeModal()
+      })
+      document.getElementById('confirmAdd').addEventListener('click', () => {
+        const id = el.modelId.value.trim()
+        if (!id) {
+          el.modalError.textContent = '请填写模型 id'
+          el.modelId.focus()
+          return
+        }
+        providers[currentId].models.push({
+          id,
+          label: el.modelLabel.value.trim()
+        })
+        closeModal()
+        renderModels(providers[currentId])
+        setFooterStatus('已添加模型（未保存）', 'warn')
+        showToast(`已添加 ${id}`, true)
+      })
+
+      el.btnTest.addEventListener('click', () => {
+        syncFieldsToProvider()
+        const p = providers[currentId]
+        el.btnTest.disabled = true
+        el.btnTest.textContent = '测试中…'
+        setFooterStatus('正在测试连接…', 'warn')
+        setTimeout(() => {
+          el.btnTest.disabled = false
+          el.btnTest.textContent = '测试连接'
+          const ok = !!p.baseUrl
+          if (ok) {
+            setFooterStatus('连接成功', 'ok')
+            showToast(`${p.name} 连接成功`, true)
+          } else {
+            setFooterStatus('连接失败：请填写 Base URL', 'warn')
+            showToast('连接失败', false)
+          }
+        }, 700)
+      })
+
+      el.btnSave.addEventListener('click', () => {
+        syncFieldsToProvider()
+        const p = providers[currentId]
+        el.btnSave.disabled = true
+        el.btnSave.textContent = '保存中…'
+        setTimeout(() => {
+          el.btnSave.disabled = false
+          el.btnSave.textContent = '保存'
+          setFooterStatus('已保存', 'ok')
+          showToast(`${p.name} 配置已保存`, true)
+        }, 450)
+      })
+
+      document.getElementById('addProvider').addEventListener('click', () => {
+        showToast('演示稿：添加供应商流程未展开', false)
+      })
+
+      document.getElementById('themeToggle').addEventListener('click', () => {
+        const root = document.documentElement
+        const next = root.getAttribute('data-theme') === 'daylight' ? 'midnight' : 'daylight'
+        root.setAttribute('data-theme', next)
+        document.getElementById('themeToggle').textContent =
+          next === 'daylight' ? '切 Midnight' : '切 Daylight'
+      })
+
+      selectProvider('ollama')
+    </script>
+  </body>
+</html>

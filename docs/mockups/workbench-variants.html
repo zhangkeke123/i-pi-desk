@@ -1,0 +1,768 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>i-pi-desk · 完整 UI 多版本对比</title>
+  <style>
+    :root {
+      --bg: #e4e9ef;
+      --ink: #1a2030;
+      --muted: #6b7280;
+      --font: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      --mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--ink);
+      padding: 24px 20px 56px;
+    }
+    .page-head {
+      max-width: 1280px;
+      margin: 0 auto 18px;
+    }
+    .page-head h1 {
+      margin: 0 0 6px;
+      font-size: 18px;
+      letter-spacing: -0.03em;
+    }
+    .page-head p {
+      margin: 0;
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.55;
+      max-width: 720px;
+    }
+    .switcher {
+      max-width: 1280px;
+      margin: 0 auto 14px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .switcher button {
+      border: 1px solid #c5ced8;
+      background: #fff;
+      border-radius: 999px;
+      padding: 7px 14px;
+      font-size: 12.5px;
+      color: #374151;
+      cursor: pointer;
+    }
+    .switcher button[aria-selected="true"] {
+      background: #111827;
+      border-color: #111827;
+      color: #fff;
+    }
+    .stage-wrap {
+      max-width: 1280px;
+      margin: 0 auto;
+    }
+    .legend {
+      margin-top: 14px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+    @media (max-width: 900px) {
+      .legend { grid-template-columns: 1fr; }
+    }
+    .legend article {
+      background: #fff;
+      border: 1px solid #c9d2dc;
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 12.5px;
+      color: #4b5563;
+      line-height: 1.55;
+    }
+    .legend strong {
+      display: block;
+      color: #111827;
+      margin-bottom: 4px;
+      font-size: 13px;
+    }
+
+    /* ========== shared app shell ========== */
+    .app {
+      height: min(760px, 82vh);
+      border-radius: 14px;
+      overflow: hidden;
+      border: 1px solid #b8c2ce;
+      box-shadow: 0 22px 55px -30px rgba(15, 23, 42, 0.4);
+      display: none;
+      grid-template-columns: 48px 260px 1fr;
+      background: #fff;
+    }
+    .app.on { display: grid; }
+    .app.v2 { grid-template-columns: 48px 280px 1fr 300px; }
+    .app.v3 { grid-template-columns: 52px 1fr; }
+
+    .rail {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 10px 0 12px;
+      border-right: 1px solid var(--b);
+      background: var(--rail);
+    }
+    .rail .ri {
+      width: 36px;
+      height: 36px;
+      border-radius: 9px;
+      display: grid;
+      place-items: center;
+      font-size: 10px;
+      color: var(--m);
+      line-height: 1.1;
+      text-align: center;
+    }
+    .rail .ri b { font-weight: 500; font-size: 9px; display: block; margin-top: 1px; }
+    .rail .ri.on {
+      background: var(--surface);
+      color: var(--ink2);
+      box-shadow: 0 1px 0 rgba(0,0,0,.06);
+    }
+    .rail .sp { flex: 1; }
+
+    .side {
+      border-right: 1px solid var(--b);
+      background: var(--side);
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+    .side-hd { padding: 12px 12px 8px; display: grid; gap: 6px; }
+    .btn {
+      height: 32px;
+      border-radius: 7px;
+      border: 1px solid var(--b);
+      background: var(--surface);
+      color: var(--ink2);
+      font-size: 12.5px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 0 10px;
+    }
+    .btn.ghost { background: transparent; border-style: dashed; color: var(--m); }
+    .search {
+      height: 30px;
+      border-radius: 7px;
+      border: 1px solid var(--b);
+      background: var(--surface);
+      color: var(--m);
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0 9px;
+    }
+    .side-scroll { flex: 1; overflow: auto; padding-bottom: 10px; }
+    .lbl {
+      padding: 10px 12px 4px;
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--m);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .lbl .n {
+      margin-left: auto;
+      letter-spacing: 0;
+      text-transform: none;
+      opacity: .8;
+    }
+    .srow {
+      margin: 1px 8px;
+      padding: 7px 8px;
+      border-radius: 7px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12.5px;
+      color: var(--ink2);
+      min-width: 0;
+    }
+    .srow:hover, .srow.on { background: var(--hover); }
+    .srow .t { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .srow .meta { font-family: var(--mono); font-size: 10px; color: var(--m); flex-shrink: 0; }
+    .st {
+      width: 14px; height: 14px; flex-shrink: 0;
+      display: grid; place-items: center; font-size: 10px; color: var(--m);
+    }
+    .st.run { color: var(--accent); }
+    .st.ok { color: #3d9a6a; }
+    .st.err { color: #c07a2a; }
+
+    /* project group */
+    .pg {
+      margin: 4px 8px 2px;
+      border-radius: 8px;
+      border: 1px solid transparent;
+    }
+    .pg-hd {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 7px 8px;
+      cursor: default;
+      border-radius: 8px;
+      color: var(--ink2);
+      font-size: 12.5px;
+    }
+    .pg-hd:hover { background: var(--hover); }
+    .pg-hd .pc {
+      width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0;
+    }
+    .pg-hd .name { font-weight: 550; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .pg-hd .cnt { font-family: var(--mono); font-size: 10px; color: var(--m); }
+    .pg-body { padding: 0 0 4px 10px; }
+    .pg-body .srow { margin-left: 4px; }
+
+    .main {
+      display: grid;
+      grid-template-rows: 40px 1fr auto;
+      min-width: 0;
+      background: var(--canvas);
+    }
+    .top {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 14px;
+      border-bottom: 1px solid var(--b);
+      font-size: 12.5px;
+      background: color-mix(in srgb, var(--canvas) 85%, #fff);
+    }
+    .top .path { color: var(--m); font-family: var(--mono); font-size: 11px; }
+    .top .g { flex: 1; }
+    .ico-btn {
+      width: 28px; height: 26px; border-radius: 6px;
+      display: grid; place-items: center; color: var(--m); font-size: 12px;
+    }
+
+    .body { overflow: auto; padding: 20px 22px; }
+    .composer {
+      padding: 0 16px 14px;
+      background: linear-gradient(to top, var(--canvas) 65%, transparent);
+    }
+    .box {
+      border: 1px solid var(--b);
+      border-radius: 9px;
+      background: var(--surface);
+      box-shadow: 0 1px 0 rgba(0,0,0,.04);
+      padding: 8px 10px;
+    }
+    .box .ph { color: var(--m); font-size: 13px; min-height: 38px; padding: 4px 2px 8px; }
+    .foot { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+    .pill {
+      height: 24px; padding: 0 8px; border-radius: 999px;
+      border: 1px solid var(--b); background: var(--hover);
+      color: var(--m); font-size: 11px; display: inline-flex; align-items: center;
+    }
+    .send {
+      margin-left: auto; width: 28px; height: 28px; border-radius: 50%;
+      background: var(--ink2); color: #fff; display: grid; place-items: center;
+    }
+
+    /* V1 home */
+    .home { max-width: 580px; margin: 24px auto 0; display: grid; gap: 16px; }
+    .home h2 { margin: 0; font-size: 18px; letter-spacing: -0.03em; }
+    .home .lead { margin: 0; font-size: 13px; color: var(--m); line-height: 1.5; }
+    .cta {
+      width: fit-content; height: 36px; padding: 0 14px; border: 0; border-radius: 7px;
+      background: var(--ink2); color: #fff; font-size: 13px;
+      display: inline-flex; align-items: center; gap: 8px;
+    }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .card {
+      background: var(--surface); border: 1px solid var(--b); border-radius: 9px; padding: 10px 12px;
+    }
+    .card h3 {
+      margin: 0 0 8px; font-size: 10.5px; font-family: var(--mono);
+      letter-spacing: .07em; text-transform: uppercase; color: var(--m); font-weight: 500;
+    }
+    .item {
+      display: flex; align-items: center; gap: 8px; padding: 6px 0;
+      border-top: 1px solid color-mix(in srgb, var(--b) 70%, transparent);
+      font-size: 12.5px; color: var(--ink2);
+    }
+    .item:first-of-type { border-top: 0; }
+    .item small { margin-left: auto; color: var(--m); font-family: var(--mono); font-size: 10px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chip {
+      height: 26px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--b);
+      background: var(--surface); color: var(--ink2); font-size: 11.5px;
+      display: inline-flex; align-items: center;
+    }
+
+    /* V2 inspector */
+    .insp {
+      border-left: 1px solid var(--b);
+      background: var(--surface);
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+    .insp-hd {
+      height: 40px; display: flex; align-items: center; gap: 6px;
+      padding: 0 10px; border-bottom: 1px solid var(--b); font-size: 12.5px;
+    }
+    .insp-tabs { display: flex; gap: 2px; padding: 8px; border-bottom: 1px solid var(--b); }
+    .insp-tabs span {
+      padding: 5px 9px; border-radius: 6px; font-size: 11.5px; color: var(--m);
+    }
+    .insp-tabs span.on { background: var(--hover); color: var(--ink2); }
+    .insp-body { padding: 10px 12px; font-size: 12.5px; color: var(--ink2); line-height: 1.5; flex: 1; overflow: auto; }
+    .diff-line { font-family: var(--mono); font-size: 11px; padding: 2px 0; }
+    .diff-line.add { color: #2f8a5b; }
+    .diff-line.del { color: #b45309; }
+
+    /* chat turns */
+    .thread { max-width: 680px; margin: 0 auto; display: grid; gap: 14px; }
+    .who { font-family: var(--mono); font-size: 10.5px; color: var(--m); margin-bottom: 4px; }
+    .bubble {
+      border: 1px solid var(--b); background: var(--surface); border-radius: 9px;
+      padding: 10px 12px; font-size: 13px; line-height: 1.55; color: var(--ink2);
+    }
+    .bubble.me { background: var(--accent-soft); border-color: color-mix(in srgb, var(--accent) 25%, var(--b)); }
+
+    /* V3 project hub full page */
+    .hub {
+      display: grid;
+      grid-template-rows: 40px 1fr;
+      background: var(--canvas);
+      min-width: 0;
+    }
+    .hub-body {
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      min-height: 0;
+    }
+    .hub-list {
+      border-right: 1px solid var(--b);
+      background: var(--side);
+      overflow: auto;
+      padding: 12px;
+    }
+    .hub-detail { overflow: auto; padding: 20px 24px; }
+    .proj-card {
+      border: 1px solid var(--b);
+      background: var(--surface);
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 8px;
+    }
+    .proj-card.on { border-color: color-mix(in srgb, var(--accent) 45%, var(--b)); box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 15%, transparent); }
+    .proj-card .title { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; }
+    .proj-card .sub { margin-top: 4px; font-size: 11.5px; color: var(--m); font-family: var(--mono); }
+    .proj-card .stats {
+      margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap;
+    }
+    .stat {
+      font-size: 11px; color: var(--ink2); background: var(--hover);
+      border-radius: 999px; padding: 3px 8px;
+    }
+    .sum-block {
+      border: 1px solid var(--b);
+      background: var(--surface);
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-bottom: 12px;
+    }
+    .sum-block h3 { margin: 0 0 8px; font-size: 13px; }
+    .sum-block p { margin: 0; font-size: 12.5px; color: var(--ink2); line-height: 1.6; }
+    .sess-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+    .sess-table th {
+      text-align: left; font-weight: 500; color: var(--m); font-size: 11px;
+      padding: 8px 6px; border-bottom: 1px solid var(--b);
+    }
+    .sess-table td { padding: 9px 6px; border-bottom: 1px solid color-mix(in srgb, var(--b) 65%, transparent); color: var(--ink2); }
+    .tag {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 11px; padding: 2px 7px; border-radius: 999px;
+      background: var(--hover); color: var(--m);
+    }
+    .tag.pin { background: #eef6ff; color: #3b6ea8; }
+    .tag.tmp { background: #f3f4f6; color: #6b7280; }
+    .tag.done { background: #ecf8f1; color: #2f8a5b; }
+
+    /* theme packs */
+    .v1-theme {
+      --canvas: #f4f6f9; --surface: #fff; --side: #f0f3f7; --rail: #e8ecf1;
+      --b: #d8dee6; --ink2: #1e2430; --m: #7a8494; --hover: #eef1f5;
+      --accent: #3d8fa3; --accent-soft: #e8f4f7;
+    }
+    .v2-theme {
+      --canvas: #f7f8fa; --surface: #fff; --side: #fbfbfc; --rail: #f3f4f6;
+      --b: #e5e7eb; --ink2: #111827; --m: #9ca3af; --hover: #f3f4f6;
+      --accent: #2563eb; --accent-soft: #eff6ff;
+    }
+    .v3-theme {
+      --canvas: #f6f7f5; --surface: #fff; --side: #f1f3ef; --rail: #e8ebe4;
+      --b: #d5dbd0; --ink2: #1c2118; --m: #6f7a68; --hover: #e9eee6;
+      --accent: #4a8f7a; --accent-soft: #e8f3ee;
+    }
+  </style>
+</head>
+<body>
+  <div class="page-head">
+    <h1>完整 UI · 三版对比</h1>
+    <p>
+      针对「项目视图不清晰、会话分区/总结看不清」重做。A 偏 Modus 清爽；B 加右侧产物面；C 独立项目中心 + 会话总结表。
+      顶部切换版本即可一眼看。
+    </p>
+  </div>
+
+  <div class="switcher" role="tablist">
+    <button type="button" data-v="1" aria-selected="true">A · 清爽工作台（会话分区清晰）</button>
+    <button type="button" data-v="2" aria-selected="false">B · 对话 + 右侧审阅</button>
+    <button type="button" data-v="3" aria-selected="false">C · 项目中心（总结会话）</button>
+  </div>
+
+  <div class="stage-wrap">
+    <!-- ===================== V1 ===================== -->
+    <div class="app v1-theme on" id="app1" aria-label="版本 A">
+      <aside class="rail">
+        <div class="ri on">⌂<b>工作台</b></div>
+        <div class="ri">◷<b>定时</b></div>
+        <div class="ri">▤<b>项目</b></div>
+        <div class="sp"></div>
+        <div class="ri">⚙<b>设置</b></div>
+      </aside>
+      <aside class="side">
+        <div class="side-hd">
+          <div class="btn">⚡ 快捷会话</div>
+          <div class="btn ghost">＋ 新会话</div>
+          <div class="search">⌕ 搜索会话</div>
+        </div>
+        <div class="side-scroll">
+          <div class="lbl">临时会话 <span class="n">默认工作区 · 2</span></div>
+          <div class="srow"><span class="st">○</span><span class="t">随手问一下目录结构</span><span class="meta">刚刚</span></div>
+          <div class="srow"><span class="st">○</span><span class="t">草稿：还没标题</span><span class="meta">1小时</span></div>
+
+          <div class="lbl">置顶 <span class="n">2</span></div>
+          <div class="srow on"><span class="st run">◉</span><span class="t">排查网关切流</span><span class="meta">进行中</span></div>
+          <div class="srow"><span class="st ok">✓</span><span class="t">字段配置 SQL</span><span class="meta">昨天</span></div>
+
+          <div class="lbl">按项目 <span class="n">普通会话</span></div>
+          <div class="pg">
+            <div class="pg-hd">
+              <span class="pc" style="background:#3d8fa3"></span>
+              <span class="name">a3-lib</span>
+              <span class="cnt">4</span>
+              <span style="color:var(--m);font-size:10px">▾</span>
+            </div>
+            <div class="pg-body">
+              <div class="srow"><span class="st ok">✓</span><span class="t">新建 utils.ts</span><span class="meta">今天</span></div>
+              <div class="srow"><span class="st">○</span><span class="t">工作台空态改版</span><span class="meta">2天</span></div>
+              <div class="srow"><span class="st err">!</span><span class="t">本地联调 proxy</span><span class="meta">异常</span></div>
+            </div>
+          </div>
+          <div class="pg">
+            <div class="pg-hd">
+              <span class="pc" style="background:#c4a574"></span>
+              <span class="name">a3-expert-square</span>
+              <span class="cnt">2</span>
+              <span style="color:var(--m);font-size:10px">▸</span>
+            </div>
+          </div>
+          <div class="pg">
+            <div class="pg-hd">
+              <span class="pc" style="background:#8f7ab5"></span>
+              <span class="name">a3-talent-libary</span>
+              <span class="cnt">1</span>
+              <span style="color:var(--m);font-size:10px">▸</span>
+            </div>
+          </div>
+        </div>
+      </aside>
+      <section class="main">
+        <header class="top">
+          <span>未选择工作目录</span>
+          <div class="g"></div>
+          <div class="ico-btn">⌕</div>
+          <div class="ico-btn">▥</div>
+        </header>
+        <div class="body">
+          <div class="home">
+            <div>
+              <h2>选择工作区，开始一轮任务</h2>
+              <p class="lead">左侧：临时 / 置顶 / 按项目。点项目色点可区分仓库；点会话即切入对应目录。</p>
+            </div>
+            <button class="cta" type="button">📁 选择工作目录</button>
+            <div class="grid2">
+              <div class="card">
+                <h3>最近目录</h3>
+                <div class="item"><span class="pc" style="width:8px;height:8px;border-radius:50%;background:#3d8fa3;display:inline-block"></span>a3-lib <small>今天</small></div>
+                <div class="item"><span style="width:8px;height:8px;border-radius:50%;background:#c4a574;display:inline-block"></span>a3-expert-square <small>2天</small></div>
+              </div>
+              <div class="card">
+                <h3>继续上次</h3>
+                <div class="item">排查网关切流 <small>置顶</small></div>
+                <div class="item">新建 utils.ts <small>a3-lib</small></div>
+              </div>
+            </div>
+            <div class="chips">
+              <span class="chip">过一遍项目结构</span>
+              <span class="chip">找出 TODO</span>
+              <span class="chip">小功能要改哪些文件</span>
+            </div>
+          </div>
+        </div>
+        <div class="composer">
+          <div class="box">
+            <div class="ph">随心输入…</div>
+            <div class="foot">
+              <span class="pill">未选目录</span>
+              <span class="pill">模型</span>
+              <span class="pill">每次询问</span>
+              <div class="send">↑</div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ===================== V2 ===================== -->
+    <div class="app v2 v2-theme" id="app2" aria-label="版本 B">
+      <aside class="rail">
+        <div class="ri on">⌂<b>工作台</b></div>
+        <div class="ri">◷<b>定时</b></div>
+        <div class="ri">▤<b>项目</b></div>
+        <div class="sp"></div>
+        <div class="ri">⚙</div>
+      </aside>
+      <aside class="side">
+        <div class="side-hd">
+          <div class="btn">⚡ 快捷会话</div>
+          <div class="search">⌕ 搜索</div>
+        </div>
+        <div class="side-scroll">
+          <div class="lbl">临时</div>
+          <div class="srow"><span class="st">○</span><span class="t">默认区草稿</span><span class="meta">3时</span></div>
+          <div class="lbl">置顶</div>
+          <div class="srow on"><span class="st run">◉</span><span class="t">排查网关切流</span><span class="meta">跑</span></div>
+          <div class="lbl">项目</div>
+          <div class="pg">
+            <div class="pg-hd">
+              <span class="pc" style="background:#2563eb"></span>
+              <span class="name">a3-lib</span>
+              <span class="cnt">3</span>
+              <span style="color:var(--m);font-size:10px">▾</span>
+            </div>
+            <div class="pg-body">
+              <div class="srow"><span class="st ok">✓</span><span class="t">新建 utils.ts</span><span class="meta">今天</span></div>
+              <div class="srow"><span class="st">○</span><span class="t">主题清新化</span><span class="meta">昨天</span></div>
+            </div>
+          </div>
+        </div>
+      </aside>
+      <section class="main">
+        <header class="top">
+          <span style="font-weight:550">a3-lib</span>
+          <span class="path">master · D:\work\code\shudao\a3-lib</span>
+          <div class="g"></div>
+          <div class="ico-btn">⬚</div>
+          <div class="ico-btn">▥</div>
+        </header>
+        <div class="body">
+          <div class="thread">
+            <div>
+              <div class="who">你</div>
+              <div class="bubble me">帮我过一遍这个项目结构，标出前后端入口。</div>
+            </div>
+            <div>
+              <div class="who">助手 · 进行中 · 已改 2 文件</div>
+              <div class="bubble">根目录是多仓工作区。前端入口在 <code>a3-talent-libary</code>，业财 API 在 <code>a3-expert-square</code>…（右侧 Diff 可审阅）</div>
+            </div>
+          </div>
+        </div>
+        <div class="composer">
+          <div class="box">
+            <div class="ph">继续追问，或 @ 文件 / 选命令…</div>
+            <div class="foot">
+              <span class="pill">a3-lib</span>
+              <span class="pill">deepseek</span>
+              <span class="pill">每次询问</span>
+              <div class="send">↑</div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <aside class="insp">
+        <div class="insp-hd"><strong style="flex:1">产物</strong><span style="color:var(--m);font-size:11px">审阅</span></div>
+        <div class="insp-tabs">
+          <span class="on">Changes</span>
+          <span>Files</span>
+          <span>Terminal</span>
+          <span>Plan</span>
+        </div>
+        <div class="insp-body">
+          <div style="margin-bottom:10px;color:var(--m);font-size:11.5px">本次 +24 / −3 · 2 files</div>
+          <div style="font-weight:550;margin-bottom:6px">apps/desktop/src/styles.css</div>
+          <div class="diff-line del">- --color-accent: amber</div>
+          <div class="diff-line add">+ --color-accent: teal</div>
+          <div style="font-weight:550;margin:12px 0 6px">lib/theme.ts</div>
+          <div class="diff-line add">+ hint: 清新浅灰</div>
+          <p style="margin:16px 0 0;font-size:11.5px;color:var(--m)">参考 Modus：聊天在中，Diff/文件/终端在右，不埋进对话流。</p>
+        </div>
+      </aside>
+    </div>
+
+    <!-- ===================== V3 project hub ===================== -->
+    <div class="app v3 v3-theme" id="app3" aria-label="版本 C">
+      <aside class="rail">
+        <div class="ri">⌂<b>工作台</b></div>
+        <div class="ri">◷<b>定时</b></div>
+        <div class="ri on">▤<b>项目</b></div>
+        <div class="sp"></div>
+        <div class="ri">⚙</div>
+      </aside>
+      <section class="hub">
+        <header class="top">
+          <span style="font-weight:600">项目</span>
+          <span class="path">按仓库汇总会话 · 可读摘要</span>
+          <div class="g"></div>
+          <div class="search" style="width:220px">⌕ 搜项目 / 会话</div>
+          <div class="btn" style="height:28px;font-size:12px">＋ 打开目录</div>
+        </header>
+        <div class="hub-body">
+          <div class="hub-list">
+            <div class="lbl" style="padding-left:4px">全部项目 <span class="n">3</span></div>
+            <div class="proj-card on">
+              <div class="title"><span class="pc" style="width:10px;height:10px;border-radius:50%;background:#4a8f7a"></span>a3-lib</div>
+              <div class="sub">D:\work\code\shudao\a3-lib</div>
+              <div class="stats">
+                <span class="stat">会话 7</span>
+                <span class="stat">置顶 1</span>
+                <span class="stat">进行中 1</span>
+              </div>
+            </div>
+            <div class="proj-card">
+              <div class="title"><span style="width:10px;height:10px;border-radius:50%;background:#c4a574;display:inline-block"></span>a3-expert-square</div>
+              <div class="sub">…\a3-expert-square</div>
+              <div class="stats">
+                <span class="stat">会话 4</span>
+                <span class="stat">异常 1</span>
+              </div>
+            </div>
+            <div class="proj-card">
+              <div class="title"><span style="width:10px;height:10px;border-radius:50%;background:#8f7ab5;display:inline-block"></span>a3-talent-libary</div>
+              <div class="sub">…\a3-talent-libary</div>
+              <div class="stats"><span class="stat">会话 2</span></div>
+            </div>
+          </div>
+          <div class="hub-detail">
+            <div class="sum-block">
+              <h3>项目摘要 · a3-lib</h3>
+              <p>
+                最近主要在做桌面壳与主题：工作台空态、侧栏「临时 / 置顶 / 按项目」、配色去米黄。
+                未关闭事项：本地 proxy 联调（异常）、工作台视觉落地。
+              </p>
+            </div>
+            <div class="sum-block" style="padding:0;overflow:hidden">
+              <div style="padding:12px 16px 0;display:flex;align-items:center;gap:8px">
+                <h3 style="margin:0;flex:1">会话一览</h3>
+                <span class="tag tmp">临时 1</span>
+                <span class="tag pin">置顶 1</span>
+                <span class="tag done">完成 3</span>
+              </div>
+              <table class="sess-table">
+                <thead>
+                  <tr>
+                    <th style="width:72px">类型</th>
+                    <th>标题 / 一句话总结</th>
+                    <th style="width:72px">状态</th>
+                    <th style="width:64px">更新</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="tag pin">置顶</span></td>
+                    <td>
+                      <div style="font-weight:550">排查网关切流</div>
+                      <div style="font-size:11.5px;color:var(--m);margin-top:2px">ALB /uc 与 expert-square 路由核对中</div>
+                    </td>
+                    <td><span class="st run" style="display:inline">◉ 进行中</span></td>
+                    <td style="font-family:var(--mono);font-size:11px;color:var(--m)">刚刚</td>
+                  </tr>
+                  <tr>
+                    <td><span class="tag">普通</span></td>
+                    <td>
+                      <div style="font-weight:550">新建 utils.ts</div>
+                      <div style="font-size:11.5px;color:var(--m);margin-top:2px">已在 src 下落文件并补导出</div>
+                    </td>
+                    <td><span class="tag done">已完成</span></td>
+                    <td style="font-family:var(--mono);font-size:11px;color:var(--m)">今天</td>
+                  </tr>
+                  <tr>
+                    <td><span class="tag">普通</span></td>
+                    <td>
+                      <div style="font-weight:550">本地联调 proxy</div>
+                      <div style="font-size:11.5px;color:var(--m);margin-top:2px">UMI_APP_ENV=local 未生效导致直连 test</div>
+                    </td>
+                    <td style="color:#b45309">异常</td>
+                    <td style="font-family:var(--mono);font-size:11px;color:var(--m)">2天</td>
+                  </tr>
+                  <tr>
+                    <td><span class="tag tmp">临时</span></td>
+                    <td>
+                      <div style="font-weight:550">随手问目录结构</div>
+                      <div style="font-size:11.5px;color:var(--m);margin-top:2px">默认工作区草稿，未归入项目</div>
+                    </td>
+                    <td><span class="tag">新建</span></td>
+                    <td style="font-family:var(--mono);font-size:11px;color:var(--m)">1时</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button class="cta" type="button">在此项目打开工作台</button>
+              <button class="btn" type="button" style="height:36px">＋ 新建会话</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="legend">
+      <article>
+        <strong>A · 清爽工作台</strong>
+        侧栏三段写死标签：临时 / 置顶 / 按项目（色点+展开）。主区仍是空态控制台。适合默认首页。
+      </article>
+      <article>
+        <strong>B · 对话 + 审阅</strong>
+        有目录后的完整态：中对话、右 Changes/Files/Terminal。会话分区仍在左，产物不埋进聊天气泡。
+      </article>
+      <article>
+        <strong>C · 项目中心</strong>
+        点左栏「项目」进来：左项目卡片（会话数/异常），右<strong>项目摘要 + 会话表</strong>（类型/一句话总结/状态）。解决「总结会话不清晰」。
+      </article>
+    </div>
+  </div>
+
+  <script>
+    const apps = {
+      1: document.getElementById('app1'),
+      2: document.getElementById('app2'),
+      3: document.getElementById('app3')
+    }
+    document.querySelectorAll('.switcher button').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const v = btn.getAttribute('data-v')
+        document.querySelectorAll('.switcher button').forEach((b) => b.setAttribute('aria-selected', b === btn ? 'true' : 'false'))
+        Object.entries(apps).forEach(([k, el]) => el.classList.toggle('on', k === v))
+      })
+    })
+  </script>
+</body>
+</html>

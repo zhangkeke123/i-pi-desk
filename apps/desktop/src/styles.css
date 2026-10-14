@@ -1,0 +1,1576 @@
+@import 'tailwindcss';
+
+/*
+  字体**随应用分发**，不走系统栈。
+
+  为什么值得多这 ~76 KB：`Geist` / `JetBrains Mono` 只当「首选名」时，
+  实际用的是这台机器上碰巧有的那一个 —— 于是同一份界面在不同机器上
+  字宽、字重、行高都不一样（中文更是从苹方到雅黑再到 Noto 各不同）。
+  界面是「设计」还是「碰运气」，差别主要就落在这一类地方。
+
+  两者都是 **OFL-1.1**：允许随应用分发，要求附版权与许可文本
+  （见仓库根 THIRD-PARTY.md，那份文件会被打进安装包）。
+
+  中文**不打包**：一个可用的中文字体是 10 MB 量级，收益与体积不成比例；
+  中文继续走系统栈（PingFang / 微软雅黑 / Noto），在 `--font-sans` 里排在后面。
+*/
+/* Geist（OFL-1.1）：界面字体。选它不是因为它「中性」，而是因为它在小字号下的几何感够清楚，
+   又不像 Inter 那样是 LLM 生成界面的默认脸。 */
+@import '@fontsource-variable/geist/wght.css';
+@import '@fontsource-variable/jetbrains-mono/wght.css';
+
+/*
+  ============================================================================
+  设计令牌（design tokens）
+  ============================================================================
+
+  Tailwind 4 用 CSS-first 配置：`@theme` 里定义的变量会自动生成工具类
+  （如 `--color-surface` → `bg-surface`）。组件里统一写语义 token
+  （`bg-[var(--color-surface)]` 或 `bg-surface`），**不写具体色值** ——
+  换主题只换变量，组件一行都不用改。
+
+  分三层，别混：
+
+  1. **原始/主题层**（每个主题各写一份）：canvas / surface / border / ink / accent …
+     这是「长什么样」；
+  2. **形状与动效层**（多数主题共用，个别可覆盖）：radius / shadow / ease / duration
+     这是「摸起来什么手感」。`graphite` 更紧凑、`contrast` 更粗；
+  3. **语法高亮层**：编辑器取色必须跟着主题一起换，否则会出现
+     「切到浅色主题后代码仍是暗色配色」这种散落在组件里的问题。
+
+  主题清单见 renderer 的 `lib/theme.ts`（id / 名称 / 亮暗 / 预览色都从那里读），
+  它与人眼看到的这份 CSS 必须一一对应 —— `verify:doc-claims` 会检查两边不漂。
+
+  亮暗信息通过 `color-scheme` 交给浏览器，原生控件（滚动条、下拉、日期选择）
+  才会跟着变；窗口底色由主进程按主题的亮暗预置，避免启动瞬间闪一下白/黑。
+*/
+
+@theme {
+  /* ── 主题色（默认 = daylight：清新浅灰青）──
+     目标：少色相、低彩度、一张青强调。避免米黄/琥珀堆在一起显得花。 */
+  --color-canvas: oklch(0.968 0.006 240);
+  --color-surface: oklch(0.995 0.002 240);
+  --color-surface-2: oklch(0.95 0.006 240);
+  --color-surface-3: oklch(0.92 0.008 240);
+  --color-border: oklch(0.9 0.008 240);
+  --color-border-strong: oklch(0.8 0.012 240);
+  --color-ink: oklch(0.26 0.014 250);
+  --color-ink-soft: oklch(0.4 0.012 250);
+  --color-muted: oklch(0.52 0.014 250);
+  --color-accent: oklch(0.55 0.085 210);
+  --color-accent-hover: oklch(0.48 0.09 210);
+  --color-accent-soft: oklch(0.94 0.025 210);
+  --color-accent-ink: oklch(0.99 0.004 210);
+  --color-danger: oklch(0.52 0.14 25);
+  --color-danger-soft: oklch(0.96 0.02 25);
+  --color-warn: oklch(0.58 0.08 75);
+  --color-warn-soft: oklch(0.96 0.02 75);
+  --color-ok: oklch(0.52 0.08 155);
+  --color-ok-soft: oklch(0.96 0.018 155);
+  --color-ring: oklch(0.55 0.085 210);
+  --color-action: oklch(0.3 0.014 250);
+  --color-action-hover: oklch(0.24 0.014 250);
+  --color-action-ink: oklch(0.99 0.002 240);
+
+  /* ── 形状：**只留一个基准**，其余派生 ──
+     从 10px 收到 5px：圆角越大越「应用化」，越小越像工具。
+     派生用 max() 兜底，避免基准调小时算出负值（负圆角是无效值，会被静默忽略）。 */
+  --radius: 5px;
+  --radius-xs: max(0px, calc(var(--radius) - 4px));
+  --radius-sm: max(0px, calc(var(--radius) - 2px));
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 3px);
+  --radius-xl: calc(var(--radius) + 7px);
+
+  /* ── 字号：收敛到 5 档 + 行高。
+     之前组件里散着 11 / 11.5 / 12.5 / 13.5 一大堆「差一点」的字号 ——
+     同屏出现三种「差不多大」的字，观感就是没做过设计。 */
+  --text-2xs: 11px;
+  --text-2xs--line-height: 1.45;
+  --text-xs: 12px;
+  --text-xs--line-height: 1.5;
+  --text-ui: 13px;
+  --text-ui--line-height: 1.55;
+  --text-body: 14px;
+  --text-body--line-height: 1.65;
+  --text-title: 16px;
+  --text-title--line-height: 1.4;
+  --text-display: 20px;
+  --text-display--line-height: 1.3;
+  --text-hero: 26px;
+  --text-hero--line-height: 1.25;
+
+  /* ── 阴影：只留「贴住」的暗示（浅色默认更淡）── */
+  --shadow-sm: 0 1px 0 oklch(0.45 0.01 250 / 0.06);
+  --shadow-md: 0 1px 3px oklch(0.45 0.01 250 / 0.08);
+  --shadow-lg: 0 12px 28px -16px oklch(0.4 0.01 250 / 0.18);
+
+  /* ── 动效 ── */
+  --ease-out: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --duration-fast: 120ms;
+  --duration-base: 180ms;
+
+  /* ── 字体 ──
+     Geist（OFL-1.1）承担界面：几何但不呆板，小字号下依然清楚；
+     结构信息（路径、工具名、计数、状态、标签）一律走等宽 ——
+     这是这一版最有效的「去 AI 味」手段：让字体分工表达信息层级，而不是靠彩色图标块。
+     中文与兜底继续走系统栈（见文件顶部说明）。 */
+  --font-sans:
+    'Geist Variable', 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei',
+    'Noto Sans CJK SC', sans-serif;
+  --font-mono: 'JetBrains Mono Variable', 'JetBrains Mono', 'Cascadia Mono', 'SFMono-Regular', Consolas, monospace;
+
+  /* ── 语法高亮：浅色底上的低饱和 ── */
+  --color-syn-keyword: oklch(0.45 0.1 250);
+  --color-syn-string: oklch(0.44 0.08 155);
+  --color-syn-number: oklch(0.48 0.08 60);
+  --color-syn-comment: oklch(0.58 0.01 250);
+  --color-syn-function: oklch(0.45 0.07 215);
+  --color-syn-type: oklch(0.46 0.06 200);
+  --color-syn-operator: oklch(0.44 0.015 250);
+  --color-syn-property: oklch(0.36 0.012 250);
+  --color-syn-invalid: oklch(0.52 0.14 25);
+}
+
+/* ==========================================================================
+   默认 / daylight —— 清新浅灰青（默认主体）
+   ========================================================================== */
+:root,
+:root[data-theme='daylight'] {
+  color-scheme: light;
+  --color-canvas: oklch(0.968 0.006 240);
+  --color-surface: oklch(0.995 0.002 240);
+  --color-surface-2: oklch(0.95 0.006 240);
+  --color-surface-3: oklch(0.92 0.008 240);
+  --color-border: oklch(0.9 0.008 240);
+  --color-border-strong: oklch(0.8 0.012 240);
+  --color-ink: oklch(0.26 0.014 250);
+  --color-ink-soft: oklch(0.4 0.012 250);
+  --color-muted: oklch(0.52 0.014 250);
+  --color-accent: oklch(0.55 0.085 210);
+  --color-accent-hover: oklch(0.48 0.09 210);
+  --color-accent-soft: oklch(0.94 0.025 210);
+  --color-accent-ink: oklch(0.99 0.004 210);
+  --color-danger: oklch(0.52 0.14 25);
+  --color-danger-soft: oklch(0.96 0.02 25);
+  --color-warn: oklch(0.58 0.08 75);
+  --color-warn-soft: oklch(0.96 0.02 75);
+  --color-ok: oklch(0.52 0.08 155);
+  --color-ok-soft: oklch(0.96 0.018 155);
+  --color-ring: oklch(0.55 0.085 210);
+  --color-action: oklch(0.3 0.014 250);
+  --color-action-hover: oklch(0.24 0.014 250);
+  --color-action-ink: oklch(0.99 0.002 240);
+  --color-overlay: oklch(0.35 0.01 250 / 0.32);
+  --color-sidebar: oklch(0.955 0.007 240);
+  --color-sidebar-ink: oklch(0.32 0.014 250);
+  --shadow-sm: 0 1px 0 oklch(0.45 0.01 250 / 0.06);
+  --shadow-md: 0 1px 3px oklch(0.45 0.01 250 / 0.08);
+  --shadow-lg: 0 12px 28px -16px oklch(0.4 0.01 250 / 0.18);
+  --color-syn-keyword: oklch(0.45 0.1 250);
+  --color-syn-string: oklch(0.44 0.08 155);
+  --color-syn-number: oklch(0.48 0.08 60);
+  --color-syn-comment: oklch(0.58 0.01 250);
+  --color-syn-function: oklch(0.45 0.07 215);
+  --color-syn-type: oklch(0.46 0.06 200);
+  --color-syn-operator: oklch(0.44 0.015 250);
+  --color-syn-property: oklch(0.36 0.012 250);
+  --color-syn-invalid: oklch(0.52 0.14 25);
+}
+
+/* ==========================================================================
+   主题：midnight —— 冷中性深灰。少色相，一张青强调
+   ========================================================================== */
+:root[data-theme='midnight'] {
+  color-scheme: dark;
+  --color-canvas: oklch(0.17 0.004 250);
+  --color-surface: oklch(0.21 0.004 250);
+  --color-surface-2: oklch(0.25 0.005 250);
+  --color-surface-3: oklch(0.295 0.005 250);
+  --color-border: oklch(1 0 0 / 0.08);
+  --color-border-strong: oklch(1 0 0 / 0.2);
+  --color-ink: oklch(0.94 0.006 250);
+  --color-ink-soft: oklch(0.82 0.006 250);
+  --color-muted: oklch(0.66 0.008 250);
+  --color-accent: oklch(0.72 0.08 200);
+  --color-accent-hover: oklch(0.78 0.08 200);
+  --color-accent-soft: oklch(0.28 0.03 200);
+  --color-accent-ink: oklch(0.16 0.02 200);
+  --color-danger: oklch(0.65 0.14 25);
+  --color-danger-soft: oklch(0.28 0.045 25);
+  --color-warn: oklch(0.78 0.08 75);
+  --color-warn-soft: oklch(0.3 0.035 75);
+  --color-ok: oklch(0.72 0.09 155);
+  --color-ok-soft: oklch(0.28 0.04 155);
+  --color-ring: oklch(0.72 0.08 200);
+  --color-action: oklch(0.93 0.004 250);
+  --color-action-hover: oklch(0.97 0.004 250);
+  --color-action-ink: oklch(0.2 0.008 250);
+  --color-overlay: oklch(0.1 0.004 250 / 0.58);
+  --color-sidebar: oklch(0.185 0.004 250);
+  --color-sidebar-ink: oklch(0.88 0.006 250);
+  --shadow-sm: 0 1px 0 oklch(0 0 0 / 0.28);
+  --shadow-md: 0 2px 6px -2px oklch(0 0 0 / 0.34);
+  --shadow-lg: 0 14px 34px -18px oklch(0 0 0 / 0.55);
+  --color-syn-keyword: oklch(0.76 0.07 200);
+  --color-syn-string: oklch(0.78 0.06 155);
+  --color-syn-number: oklch(0.8 0.06 70);
+  --color-syn-comment: oklch(0.55 0.01 250);
+  --color-syn-function: oklch(0.78 0.05 215);
+  --color-syn-type: oklch(0.84 0.05 200);
+  --color-syn-operator: oklch(0.72 0.015 250);
+  --color-syn-property: oklch(0.8 0.01 250);
+  --color-syn-invalid: oklch(0.65 0.14 25);
+}
+
+/* ==========================================================================
+   主题 2：graphite —— 中性深灰 + 橄榄点缀，更紧凑。偏「编辑器本体」的克制感
+   ========================================================================== */
+:root[data-theme='graphite'] {
+  color-scheme: dark;
+  --color-canvas: oklch(0.168 0.002 90);
+  --color-surface: oklch(0.208 0.002 90);
+  --color-surface-2: oklch(0.248 0.003 90);
+  --color-surface-3: oklch(0.288 0.003 90);
+  --color-border: oklch(1 0 0 / 0.1);
+  --color-border-strong: oklch(1 0 0 / 0.28);
+  --color-ink: oklch(0.93 0.004 90);
+  --color-ink-soft: oklch(0.8 0.004 90);
+  --color-muted: oklch(0.64 0.005 90);
+  /* 苔绿点缀，彩度再压一点 */
+  --color-accent: oklch(0.74 0.07 130);
+  --color-accent-hover: oklch(0.8 0.07 130);
+  --color-accent-soft: oklch(0.28 0.025 130);
+  --color-accent-ink: oklch(0.17 0.02 130);
+  --color-ring: oklch(0.74 0.07 130);
+  --color-action: oklch(0.93 0.004 90);
+  --color-action-hover: oklch(0.97 0.004 90);
+  --color-action-ink: oklch(0.18 0.004 90);
+  --color-overlay: oklch(0.1 0.002 90 / 0.66);
+  --color-sidebar: oklch(0.186 0.002 90);
+  --color-sidebar-ink: oklch(0.88 0.004 90);
+  /* 更紧凑：只改基准圆角，其余派生自动跟上；阴影更淡 */
+  --radius: 4px;
+  --shadow-md: 0 2px 4px -2px oklch(0 0 0 / 0.4);
+}
+
+/* ==========================================================================
+   主题：paper —— 极淡纸感（去米黄/去铜棕），阅读用浅色
+   ========================================================================== */
+:root[data-theme='paper'] {
+  color-scheme: light;
+  --color-canvas: oklch(0.965 0.008 95);
+  --color-surface: oklch(0.992 0.004 95);
+  --color-surface-2: oklch(0.948 0.008 95);
+  --color-surface-3: oklch(0.92 0.01 95);
+  --color-border: oklch(0.91 0.008 95);
+  --color-border-strong: oklch(0.82 0.012 95);
+  --color-ink: oklch(0.3 0.014 80);
+  --color-ink-soft: oklch(0.44 0.014 80);
+  --color-muted: oklch(0.55 0.014 85);
+  --color-accent: oklch(0.5 0.07 160);
+  --color-accent-hover: oklch(0.44 0.07 160);
+  --color-accent-soft: oklch(0.94 0.02 160);
+  --color-accent-ink: oklch(0.99 0.004 160);
+  --color-danger: oklch(0.5 0.13 25);
+  --color-danger-soft: oklch(0.955 0.02 25);
+  --color-warn: oklch(0.56 0.07 75);
+  --color-warn-soft: oklch(0.955 0.02 75);
+  --color-ok: oklch(0.5 0.08 155);
+  --color-ok-soft: oklch(0.95 0.018 155);
+  --color-ring: oklch(0.5 0.07 160);
+  --color-action: oklch(0.34 0.014 80);
+  --color-action-hover: oklch(0.28 0.014 80);
+  --color-action-ink: oklch(0.99 0.004 95);
+  --color-overlay: oklch(0.38 0.012 80 / 0.3);
+  --color-sidebar: oklch(0.95 0.008 95);
+  --color-sidebar-ink: oklch(0.36 0.014 80);
+  --shadow-sm: 0 1px 0 oklch(0.45 0.01 80 / 0.06);
+  --shadow-md: 0 1px 3px oklch(0.45 0.01 80 / 0.08);
+  --shadow-lg: 0 12px 28px -16px oklch(0.4 0.01 80 / 0.16);
+  --color-syn-keyword: oklch(0.42 0.09 250);
+  --color-syn-string: oklch(0.42 0.075 155);
+  --color-syn-number: oklch(0.46 0.08 55);
+  --color-syn-comment: oklch(0.58 0.012 90);
+  --color-syn-function: oklch(0.42 0.055 215);
+  --color-syn-type: oklch(0.45 0.06 160);
+  --color-syn-operator: oklch(0.42 0.015 80);
+  --color-syn-property: oklch(0.36 0.012 80);
+  --color-syn-invalid: oklch(0.5 0.13 25);
+}
+
+/* ==========================================================================
+   主题 5：contrast —— 高对比（无障碍取向）：纯黑底、纯白字、粗边框、亮琥珀强调
+   ========================================================================== */
+:root[data-theme='contrast'] {
+  color-scheme: dark;
+  --color-canvas: oklch(0 0 0);
+  --color-surface: oklch(0.14 0 0);
+  --color-surface-2: oklch(0.22 0 0);
+  --color-surface-3: oklch(0.3 0 0);
+  --color-border: oklch(1 0 0 / 0.32);
+  --color-border-strong: oklch(1 0 0 / 0.5);
+  --color-ink: oklch(1 0 0);
+  --color-ink-soft: oklch(0.92 0 0);
+  --color-muted: oklch(0.82 0 0);
+  --color-accent: oklch(0.88 0.17 90);
+  --color-accent-hover: oklch(0.94 0.17 90);
+  --color-accent-soft: oklch(0.32 0.075 90);
+  --color-accent-ink: oklch(0.1 0.02 90);
+  --color-danger: oklch(0.72 0.2 25);
+  --color-danger-soft: oklch(0.3 0.1 25);
+  --color-warn: oklch(0.88 0.15 85);
+  --color-warn-soft: oklch(0.32 0.075 85);
+  --color-ok: oklch(0.85 0.16 155);
+  --color-ok-soft: oklch(0.3 0.08 155);
+  --color-ring: oklch(0.92 0.17 90);
+  --color-action: oklch(1 0 0);
+  --color-action-hover: oklch(0.94 0 0);
+  --color-action-ink: oklch(0 0 0);
+  --color-overlay: oklch(0 0 0 / 0.8);
+  --color-sidebar: oklch(0.1 0 0);
+  --color-sidebar-ink: oklch(0.95 0 0);
+  /* 高对比取向下要「更方正、更粗」：只改这两处 */
+  --radius: 2px;
+  --color-syn-keyword: oklch(0.85 0.16 60);
+  --color-syn-string: oklch(0.9 0.14 130);
+  --color-syn-number: oklch(0.9 0.15 75);
+  --color-syn-comment: oklch(0.75 0 0);
+  --color-syn-function: oklch(0.85 0.1 210);
+  --color-syn-type: oklch(0.92 0.14 92);
+  --color-syn-operator: oklch(0.88 0.04 90);
+  --color-syn-property: oklch(0.95 0 0);
+  --color-syn-invalid: oklch(0.72 0.2 25);
+}
+/* ==========================================================================
+   基础
+   ========================================================================== */
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: 13.5px;
+  line-height: 1.55;
+  letter-spacing: 0.005em;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  font-variant-numeric: tabular-nums;
+  /* 主题切换时颜色平滑过渡；跨度短，不会显得迟钝。 */
+  transition:
+    background-color var(--duration-base) var(--ease-out),
+    color var(--duration-base) var(--ease-out);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 1ms !important;
+    animation-duration: 1ms !important;
+  }
+}
+
+::selection {
+  background: var(--color-accent-soft);
+  color: var(--color-ink);
+}
+
+/* 焦点环：只在键盘导航时出现（focus-visible），鼠标点击不画。 */
+:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs);
+}
+
+/* 自绘标题栏时的可拖拽区域。 */
+.drag {
+  -webkit-app-region: drag;
+}
+.no-drag {
+  -webkit-app-region: no-drag;
+}
+
+/* 细滚动条：默认滚动条在各主题下都很突兀。 */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border-strong);
+  border: 3px solid transparent;
+  background-clip: content-box;
+  border-radius: 8px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-muted);
+  background-clip: content-box;
+}
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* ==========================================================================
+   组件类（放在 components 层，工具类仍可覆盖）
+   ==========================================================================
+
+   为什么这里要有几个组件类：界面里「按钮 / 面板 / chip / 输入」各出现了几十次，
+   每次手写一长串工具类，结果必然是每个地方差一点（圆角 6 或 8、hover 深浅不一、
+   焦点环有人写有人没写）。把它们收成一处，改一次全局一致。
+*/
+@layer components {
+  /* 面板：右侧文件树/编辑器/终端/diff 共用的外壳 */
+  .panel {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+  }
+  .panel-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 38px;
+    padding: 0 10px;
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-surface-2);
+    color: var(--color-ink-soft);
+    font-size: 12px;
+    font-weight: 500;
+    flex: none;
+  }
+  .panel-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    flex: 1;
+  }
+  .panel-body {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+  }
+
+  /* 按钮 */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 30px;
+    padding: 0 10px;
+    border-radius: var(--radius-md);
+    border: 1px solid transparent;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--color-ink-soft);
+    background: transparent;
+    cursor: pointer;
+    transition:
+      background-color var(--duration-fast) var(--ease-out),
+      color var(--duration-fast) var(--ease-out),
+      border-color var(--duration-fast) var(--ease-out);
+  }
+  .btn:hover:not(:disabled) {
+    background: var(--color-surface-2);
+    color: var(--color-ink);
+  }
+  .btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+  /*
+    主行动**不用强调色**：靠明度对比表达（深色主题里是浅底深字，浅色主题里反过来）。
+    这样整屏唯一的彩色就只剩「状态」（运行中 / 等待确认 / 焦点），
+    而不是每个可点的东西都染一点颜色 —— 后者正是模板感的来源之一。
+  */
+  .btn-primary {
+    background: var(--color-action);
+    color: var(--color-action-ink);
+    border-color: transparent;
+  }
+  .btn-primary:hover:not(:disabled) {
+    background: var(--color-action-hover);
+    color: var(--color-action-ink);
+  }
+  .btn-outline {
+    border-color: var(--color-border-strong);
+    background: var(--color-surface);
+    color: var(--color-ink);
+  }
+  .btn-outline:hover:not(:disabled) {
+    background: var(--color-surface-2);
+    border-color: var(--color-muted);
+  }
+
+  .task-select {
+    max-width: 100%;
+    min-width: 0;
+    border: 0;
+    background: transparent;
+    text-align: right;
+    font-size: var(--text-xs);
+    color: var(--color-ink);
+    outline: none;
+    cursor: pointer;
+  }
+  .btn-danger {
+    background: var(--color-danger);
+    color: var(--color-accent-ink);
+  }
+  .btn-danger:hover:not(:disabled) {
+    background: color-mix(in oklch, var(--color-danger) 85%, white);
+    color: var(--color-accent-ink);
+  }
+  /* 分段控件：互斥的少数选项用一排按钮，比下拉少一次点击、也能一眼看全 */
+  .seg {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 2px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border);
+    background: var(--color-surface-2);
+  }
+  .seg-item {
+    height: 24px;
+    padding: 0 10px;
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    color: var(--color-muted);
+    background: transparent;
+    cursor: pointer;
+    transition:
+      background-color var(--duration-fast) var(--ease-out),
+      color var(--duration-fast) var(--ease-out);
+  }
+  .seg-item:hover {
+    color: var(--color-ink);
+  }
+  .seg-item-active {
+    background: var(--color-action);
+    color: var(--color-action-ink);
+  }
+
+  /* 图标按钮：顶栏那一排 */
+  .icon-btn {
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-sm);
+    color: var(--color-muted);
+    background: transparent;
+    cursor: pointer;
+    transition:
+      background-color var(--duration-fast) var(--ease-out),
+      color var(--duration-fast) var(--ease-out);
+  }
+  .icon-btn:hover:not(:disabled) {
+    background: var(--color-surface-2);
+    color: var(--color-ink);
+  }
+  .icon-btn[data-active='true'] {
+    background: var(--color-accent-soft);
+    color: var(--color-accent);
+  }
+  .icon-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  /* 小标签 */
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    height: 22px;
+    padding: 0 8px;
+    border-radius: 999px;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface-2);
+    color: var(--color-muted);
+    font-size: 11.5px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  /* 常规态的中性 chip：只靠描边与文字色，不夺目（强调色留给状态） */
+  .chip-accent {
+    border-color: var(--color-border);
+    color: var(--color-ink-soft);
+  }
+  .chip-ok {
+    border-color: color-mix(in oklch, var(--color-ok) 30%, transparent);
+    background: var(--color-ok-soft);
+    color: var(--color-ok);
+  }
+  .chip-danger {
+    border-color: color-mix(in oklch, var(--color-danger) 35%, transparent);
+    background: var(--color-danger-soft);
+    color: var(--color-danger);
+  }
+  .chip-warn {
+    border-color: color-mix(in oklch, var(--color-warn) 35%, transparent);
+    background: var(--color-warn-soft);
+    color: var(--color-warn);
+  }
+
+  /* 输入框 */
+  .field {
+    width: 100%;
+    height: 30px;
+    padding: 0 10px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border);
+    background: var(--color-surface-2);
+    color: var(--color-ink);
+    font-size: 12.5px;
+    transition:
+      border-color var(--duration-fast) var(--ease-out),
+      background-color var(--duration-fast) var(--ease-out);
+  }
+  .field::placeholder {
+    color: var(--color-muted);
+  }
+  .field:hover {
+    border-color: var(--color-border-strong);
+  }
+  .field:focus {
+    border-color: var(--color-accent);
+    background: var(--color-surface);
+  }
+  /* 注：这里**不写** `outline: none`。
+     技能库的检查项里「Focus visible」是 High：「不要在去掉 outline 的同时不给替代」，
+     而且明确要求**模态里的控件也要有焦点环**。鼠标点进来时不会有环（全局规则是
+     `:focus-visible`），键盘 Tab 进来时才有 —— 这正是想要的行为。 */
+
+  /* 分隔线与卡片 */
+  .divider {
+    height: 1px;
+    background: var(--color-border);
+  }
+  .card {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+  }
+
+  /* 键帽：快捷键提示用它，比裸文字更清楚「这是要按的键」 */
+  .kbd {
+    display: inline-grid;
+    place-items: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    border: 1px solid var(--color-border-strong);
+    border-bottom-width: 2px;
+    border-radius: var(--radius-xs);
+    background: var(--color-surface-2);
+    color: var(--color-ink-soft);
+    font-family: var(--font-sans);
+    font-size: 10.5px;
+    line-height: 1;
+  }
+
+  /* Shell：左导航轨 + 右 PI 工作台 */
+  .shell-rail {
+    width: 56px;
+    min-width: 56px;
+  }
+
+  .header-tool-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    height: 28px;
+    padding: 0 9px;
+    border-radius: var(--radius-sm);
+    border: 1px solid transparent;
+    font-size: 11.5px;
+    color: var(--color-muted);
+    background: transparent;
+    cursor: pointer;
+    transition:
+      color var(--duration-fast) var(--ease-out),
+      background-color var(--duration-fast) var(--ease-out),
+      border-color var(--duration-fast) var(--ease-out);
+  }
+  .header-tool-btn:hover {
+    color: var(--color-ink);
+    background: var(--color-surface-2);
+  }
+  .header-tool-btn[data-active='true'] {
+    color: var(--color-accent);
+    border-color: color-mix(in oklch, var(--color-accent) 35%, transparent);
+    background: var(--color-accent-soft);
+  }
+
+  /* 设置页左导航：选中项左侧强调条（分区切换，非平铺锚点） */
+  .settings-nav-item[data-active='true'] {
+    box-shadow: inset 2px 0 0 var(--color-accent);
+  }
+  .header-bar__nav {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  /*
+    顶栏与主画布同色（canvas），不再铺一层 surface 白条；
+    左边 IconRail / 会话栏同用 sidebar，整窗 chrome 只剩两层：侧栏底 + 内容底。
+    区域分割线用 divider（比 card border 更淡）。
+  */
+  :root {
+    --color-divider: color-mix(in oklch, var(--color-border) 42%, transparent);
+  }
+  .header-bar {
+    background: var(--color-canvas);
+    border-bottom: 1px solid var(--color-divider);
+  }
+  .shell-rail,
+  .shell-session,
+  .shell-inspector {
+    border-color: var(--color-divider);
+  }
+  .header-brand {
+    padding: 0 4px 0 2px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--color-ink);
+    user-select: none;
+    white-space: nowrap;
+  }
+  .header-bar__title-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-ink);
+  }
+  .header-bar__title-path {
+    font-size: 11.5px;
+    color: var(--color-muted);
+  }
+  .header-bar__icon {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 30px;
+    height: 28px;
+    border: none;
+    border-radius: var(--radius-sm);
+    color: var(--color-ink-soft);
+    background: transparent;
+    cursor: pointer;
+    -webkit-app-region: no-drag;
+    transition:
+      color var(--duration-fast) var(--ease-out),
+      background-color var(--duration-fast) var(--ease-out);
+  }
+  .header-bar__icon:hover:not(:disabled) {
+    color: var(--color-ink);
+    background: var(--color-surface-2);
+  }
+  .header-bar__icon:disabled {
+    opacity: 0.32;
+    cursor: default;
+  }
+  .header-bar__icon[data-active='true'] {
+    color: var(--color-ink);
+    background: color-mix(in oklch, var(--color-surface-2) 88%, var(--color-accent) 6%);
+  }
+
+  /* 兼容：旧类名映射到扁平顶栏图标（设置页等） */
+  .header-sidebar-toggle {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 30px;
+    height: 28px;
+    border: none;
+    border-radius: var(--radius-sm);
+    color: var(--color-muted);
+    background: transparent;
+    cursor: pointer;
+  }
+  .header-sidebar-toggle:hover {
+    color: var(--color-ink);
+    background: var(--color-surface-2);
+  }
+  .header-icon-cluster {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+  }
+  .header-icon-cluster__group {
+    display: flex;
+    align-items: center;
+    gap: 0;
+  }
+  .header-icon-cluster__btn {
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 28px;
+    border: none;
+    border-radius: var(--radius-sm);
+    color: var(--color-muted);
+    background: transparent;
+    cursor: pointer;
+  }
+  .header-icon-cluster__btn:hover:not(:disabled) {
+    color: var(--color-ink);
+    background: var(--color-surface-2);
+  }
+  .header-icon-cluster__btn:disabled {
+    opacity: 0.32;
+    cursor: default;
+  }
+  .header-icon-cluster__btn[data-active='true'] {
+    color: var(--color-ink);
+    background: color-mix(in oklch, var(--color-surface-2) 88%, var(--color-accent) 6%);
+  }
+
+  .shell-inspector {
+    max-width: 420px;
+  }
+  .workbench-hub-item[data-active='true'],
+  .workbench-hub-item:focus-visible {
+    background: var(--color-surface-2);
+  }
+  .empty-state__glyph {
+    box-shadow: var(--shadow-sm);
+  }
+  .session-strip {
+    scrollbar-width: thin;
+  }
+  .session-strip__card[data-active='true'] {
+    box-shadow: 0 0 0 1px color-mix(in oklch, var(--color-accent) 35%, transparent);
+  }
+
+  /* ── 启动闪屏 · 墨点 Logo ── */
+  .splash-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    width: 100%;
+    gap: 0.75rem;
+    padding: 2rem;
+    background: var(--color-canvas);
+    color: var(--color-ink);
+  }
+  .splash-screen__title {
+    margin: 0.25rem 0 0.5rem;
+    font-size: 1.05rem;
+    font-weight: 550;
+    letter-spacing: -0.03em;
+  }
+  .splash-screen__track {
+    width: min(220px, 56vw);
+    height: 3px;
+    border-radius: 999px;
+    background: var(--color-border);
+    overflow: hidden;
+  }
+  .splash-screen__fill {
+    height: 100%;
+    border-radius: inherit;
+    background: var(--color-accent);
+    transition: width 40ms linear;
+  }
+  .splash-screen__pct {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--color-muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .splash-screen__hint {
+    margin: 0;
+    font-size: 0.7rem;
+    color: var(--color-muted);
+    opacity: 0.8;
+  }
+  .splash-screen__error {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: var(--color-danger);
+    font-size: 0.85rem;
+    font-weight: 550;
+  }
+  .splash-screen__error-msg {
+    margin: 0;
+    max-width: 28rem;
+    text-align: center;
+    font-size: 0.78rem;
+    line-height: 1.5;
+    color: var(--color-muted);
+  }
+  .ink-logo__ring,
+  .ink-logo__dot {
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+  .ink-logo--pulse .ink-logo__ring {
+    animation: ink-ring-pulse 1.6s ease-in-out infinite;
+  }
+  .ink-logo--pulse .ink-logo__dot {
+    animation: ink-dot-breathe 1.6s ease-in-out infinite;
+  }
+  @keyframes ink-ring-pulse {
+    0%,
+    100% {
+      opacity: 0.28;
+      transform: scale(0.96);
+    }
+    50% {
+      opacity: 0.55;
+      transform: scale(1.04);
+    }
+  }
+  @keyframes ink-dot-breathe {
+    0%,
+    100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.04);
+    }
+  }
+  /* ── 聊天流：assistant turn 卡 + 浮动 composer ── */
+  .chat-stream {
+    padding-bottom: 0.5rem;
+  }
+
+  /*
+    Session 级左侧预览轨（Phase A / 图 2）：
+    竖向居中、紧凑间距；刻度为横线（非方块）；悬停从左展开。
+  */
+  .session-rail {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    width: 16px;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    padding: 0 0 0 3px;
+  }
+
+  .session-rail__track {
+    display: flex;
+    width: 100%;
+    flex: 0 0 auto;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 2px;
+    max-height: min(72%, 22rem);
+    min-height: 0;
+  }
+
+  .session-rail__tick {
+    display: block;
+    box-sizing: content-box;
+    width: 9px;
+    height: 1.5px;
+    flex: 0 0 auto;
+    margin: 0;
+    padding: 3px 0;
+    border: 0;
+    border-radius: 999px;
+    background: color-mix(in oklch, var(--color-ink-soft) 32%, transparent);
+    background-clip: content-box;
+    cursor: pointer;
+    transform-origin: left center;
+    transition:
+      background-color var(--duration-fast) var(--ease-out),
+      width var(--duration-base) var(--ease-out),
+      height var(--duration-fast) var(--ease-out),
+      opacity var(--duration-fast) var(--ease-out),
+      transform var(--duration-base) var(--ease-out);
+  }
+
+  .session-rail__tick--user {
+    width: 6px;
+    opacity: 0.72;
+  }
+
+  .session-rail__tick:hover,
+  .session-rail__tick:focus-visible {
+    width: 13px;
+    height: 2px;
+    background: var(--color-ink-soft);
+    background-clip: content-box;
+    transform: scaleX(1.06);
+    outline: none;
+  }
+
+  .session-rail__tick:focus-visible {
+    box-shadow: 0 0 0 2px color-mix(in oklch, var(--color-ring) 45%, transparent);
+  }
+
+  .session-rail__tick--active {
+    width: 12px;
+    height: 2px;
+    opacity: 1;
+    background: var(--color-accent);
+    background-clip: content-box;
+  }
+
+  .session-rail__tick--active:hover,
+  .session-rail__tick--active:focus-visible {
+    width: 14px;
+    background: var(--color-accent);
+    background-clip: content-box;
+    transform: scaleX(1.08);
+  }
+
+  .session-rail__preview {
+    /* top 由 SessionPreviewRail 按悬停刻度中心写入；translateY 垂直居中对齐 */
+    position: absolute;
+    left: 16px;
+    z-index: 5;
+    min-width: 11rem;
+    max-width: min(15.5rem, 42vw);
+    padding: 0.55rem 0.7rem 0.5rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-md);
+    pointer-events: none;
+    transform: translateY(-50%);
+  }
+
+  .session-rail__preview-title {
+    margin: 0;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--color-ink);
+  }
+
+  .session-rail__preview-body {
+    margin: 0.35rem 0 0;
+    font-size: 11px;
+    line-height: 1.45;
+    color: var(--color-muted);
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .session-rail__preview-action {
+    display: inline-block;
+    margin-top: 0.35rem;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--color-accent);
+  }
+
+  /* 消息行（session rail 定位目标） */
+  .msg-row {
+    position: relative;
+    display: block;
+  }
+
+  .msg-row__gutter {
+    position: absolute;
+    top: 0.65rem;
+    left: -1.35rem;
+    z-index: 2;
+    width: 1rem;
+  }
+
+  .msg-anchor {
+    display: grid;
+    place-items: center;
+    width: 1rem;
+    height: 1.15rem;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    color: var(--color-muted);
+  }
+
+  .msg-anchor__ticks {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2.5px;
+  }
+
+  .msg-anchor__tick {
+    display: block;
+    width: 8px;
+    height: 1.5px;
+    border-radius: 1px;
+    background: color-mix(in oklch, var(--color-ink-soft) 42%, transparent);
+    transition:
+      background-color var(--duration-fast) var(--ease-out),
+      width var(--duration-fast) var(--ease-out),
+      opacity var(--duration-fast) var(--ease-out);
+  }
+
+  /* 默认只显中间一条，悬停/打开时展开成三道把手（对标截图） */
+  .msg-anchor__tick:nth-child(1),
+  .msg-anchor__tick:nth-child(3) {
+    width: 5px;
+    opacity: 0.35;
+  }
+
+  .msg-anchor:hover .msg-anchor__tick,
+  .msg-anchor--open .msg-anchor__tick,
+  .msg-anchor:focus-visible .msg-anchor__tick {
+    width: 10px;
+    opacity: 1;
+    background: var(--color-ink-soft);
+  }
+
+  .msg-preview {
+    position: absolute;
+    top: -0.35rem;
+    left: 0.85rem;
+    display: flex;
+    align-items: stretch;
+    width: max-content;
+    max-width: min(16.5rem, 42vw);
+    pointer-events: auto;
+  }
+
+  .msg-preview__rail {
+    flex-shrink: 0;
+    width: 10px;
+    margin-top: 0.85rem;
+    border-top: 1px solid color-mix(in oklch, var(--color-border-strong) 80%, transparent);
+  }
+
+  .msg-preview__card {
+    min-width: 11rem;
+    max-width: 15.5rem;
+    padding: 0.55rem 0.7rem 0.5rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-md);
+    cursor: pointer;
+  }
+
+  .msg-preview__title {
+    margin: 0;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--color-muted);
+  }
+
+  .msg-preview__body {
+    margin: 0.35rem 0 0;
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    font-size: 12px;
+    line-height: 1.45;
+    color: var(--color-ink-soft);
+    word-break: break-word;
+  }
+
+  .msg-preview__action {
+    display: inline-block;
+    margin-top: 0.4rem;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--color-accent);
+  }
+
+  .turn-card {
+    width: 100%;
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    background: var(--color-surface);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+  }
+
+  .turn-card__head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px 0;
+    font-size: 11.5px;
+    color: var(--color-muted);
+  }
+
+  .turn-card__avatar {
+    display: grid;
+    place-items: center;
+    width: 18px;
+    height: 18px;
+    border-radius: var(--radius-xs);
+    background: var(--color-accent-soft);
+    color: var(--color-accent);
+  }
+
+  .turn-card__body {
+    padding: 10px 12px 12px;
+  }
+
+  .turn-card__foot {
+    border-top: 1px solid color-mix(in oklch, var(--color-border) 80%, transparent);
+    padding: 6px 12px 8px;
+    font-size: 11px;
+    color: var(--color-muted);
+  }
+
+  .run-status-line {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11.5px;
+    color: var(--color-muted);
+  }
+
+  .turn-steps {
+    margin-top: 4px;
+    border: 1px solid color-mix(in oklch, var(--color-border) 90%, transparent);
+    border-radius: 8px;
+    background: color-mix(in oklch, var(--color-surface-2) 50%, transparent);
+    overflow: hidden;
+  }
+
+  .turn-steps__toggle {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 10px;
+    text-align: left;
+    font-size: 11.5px;
+    color: var(--color-ink-soft);
+    background: transparent;
+    cursor: pointer;
+    transition: background-color var(--duration-fast) var(--ease-out);
+  }
+
+  .turn-steps__toggle:hover {
+    background: var(--color-surface-2);
+  }
+
+  .turn-steps__chevron {
+    flex-shrink: 0;
+    color: var(--color-muted);
+    transition: transform var(--duration-fast) var(--ease-out);
+  }
+
+  .turn-steps__chevron--open {
+    transform: rotate(90deg);
+  }
+
+  .turn-steps__hint {
+    margin-left: auto;
+    font-size: 11px;
+    color: var(--color-muted);
+  }
+
+  .turn-steps__list {
+    border-top: 1px solid var(--color-border);
+    padding: 8px 10px 10px;
+  }
+
+  .turn-step-tool {
+    border-color: color-mix(in oklch, var(--color-border) 85%, transparent);
+  }
+
+  .composer-card {
+    position: relative;
+    z-index: 2;
+    background: linear-gradient(
+      to top,
+      var(--color-canvas) 65%,
+      color-mix(in oklch, var(--color-canvas) 0%, transparent)
+    );
+  }
+
+  .composer-card__box {
+    border: 1px solid var(--color-border);
+    border-radius: calc(var(--radius-lg) + 4px);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow 160ms var(--ease-out);
+  }
+
+  .composer-card__box:focus-within {
+    /* 聚焦只加深一点阴影，不改边框色、不加光环 */
+    box-shadow: var(--shadow-md);
+  }
+
+  .composer-card__box[data-blocked='true'] {
+    border-color: color-mix(in oklch, var(--color-border-strong) 70%, var(--color-warn) 30%);
+  }
+
+  .composer-card__textarea {
+    max-height: 10rem;
+    min-height: 52px;
+    width: 100%;
+    resize: none;
+    border: 0;
+    background: transparent;
+    padding: 14px 14px 8px;
+    font-size: 13.5px;
+    line-height: 1.55;
+    color: var(--color-ink);
+    outline: none;
+  }
+
+  .composer-chip-select__trigger {
+    max-width: 100%;
+  }
+
+  .composer-chip-select__trigger--open {
+    background: var(--color-surface-2);
+    color: var(--color-ink);
+  }
+
+  .composer-chip-select__menu {
+    position: absolute;
+    left: 0;
+    bottom: calc(100% + 8px);
+    z-index: 30;
+    min-width: max(220px, 100%);
+    max-width: min(360px, 72vw);
+    max-height: min(280px, 42vh);
+    overflow: auto;
+    padding: 6px;
+    margin: 0;
+    list-style: none;
+    border: 1px solid var(--color-border);
+    border-radius: calc(var(--radius-lg) + 2px);
+    background: var(--color-surface);
+    box-shadow:
+      var(--shadow-lg),
+      0 0 0 1px color-mix(in oklch, var(--color-border) 50%, transparent);
+    animation: composer-menu-in 140ms var(--ease-out);
+  }
+
+  .composer-chip-select__option {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border: 0;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--color-ink-soft);
+    cursor: pointer;
+    transition:
+      background-color 120ms var(--ease-out),
+      color 120ms var(--ease-out);
+  }
+
+  .composer-chip-select__option:hover {
+    background: var(--color-surface-2);
+    color: var(--color-ink);
+  }
+
+  .composer-chip-select__option--active {
+    background: color-mix(in oklch, var(--color-accent-soft) 80%, var(--color-surface-2));
+    color: var(--color-ink);
+    font-weight: 550;
+  }
+
+  @keyframes composer-menu-in {
+    from {
+      opacity: 0;
+      transform: translateY(4px) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .composer-card__textarea::placeholder {
+    color: var(--color-muted);
+  }
+
+  .composer-card__foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    padding: 0 10px 10px;
+  }
+
+  .composer-card__actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .composer-card__blocker {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    padding: 7px 10px;
+    border-radius: var(--radius-md);
+    font-size: 11.5px;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface-2);
+    color: var(--color-ink-soft);
+  }
+
+  .composer-card__blocker-link {
+    margin-left: auto;
+    flex-shrink: 0;
+    font-weight: 500;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    color: var(--color-ink);
+    background: transparent;
+    cursor: pointer;
+    border: 0;
+  }
+
+  .composer-card__ring--pulse circle:last-child {
+    animation: composer-ring-pulse 1.4s ease-in-out infinite;
+  }
+
+  @keyframes composer-ring-pulse {
+    0%,
+    100% {
+      stroke-dashoffset: calc(2 * 3.14159 * 14 * 0.72);
+      opacity: 0.55;
+    }
+    50% {
+      stroke-dashoffset: calc(2 * 3.14159 * 14 * 0.35);
+      opacity: 1;
+    }
+  }
+
+  .empty-state__starters {
+    border-top: 1px solid color-mix(in oklch, var(--color-border) 70%, transparent);
+    padding-top: 1rem;
+  }
+}
+
+/* ==========================================================================
+   markdown 正文排版（手写而非引 @tailwindcss/typography，少一个依赖）
+   ========================================================================== */
+.md > *:first-child {
+  margin-top: 0;
+}
+.md > *:last-child {
+  margin-bottom: 0;
+}
+.md p {
+  margin: 0.5em 0;
+  line-height: 1.75;
+}
+.md ul,
+.md ol {
+  margin: 0.5em 0;
+  padding-left: 1.4em;
+}
+.md ul {
+  list-style: disc;
+}
+.md ol {
+  list-style: decimal;
+}
+.md li {
+  margin: 0.2em 0;
+}
+.md li::marker {
+  color: var(--color-muted);
+}
+.md h1,
+.md h2,
+.md h3 {
+  margin: 1em 0 0.4em;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.md h1 {
+  font-size: 1.3em;
+}
+.md h2 {
+  font-size: 1.15em;
+}
+.md h3 {
+  font-size: 1.02em;
+}
+.md code {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  background: var(--color-surface-3);
+  padding: 0.12em 0.36em;
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--color-border);
+}
+.md pre {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.6;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  overflow-x: auto;
+  margin: 0.6em 0;
+}
+.md pre code {
+  background: transparent;
+  border: 0;
+  padding: 0;
+}
+.md a {
+  color: var(--color-accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.md a:hover {
+  color: var(--color-accent-hover);
+}
+.md blockquote {
+  border-left: 3px solid var(--color-accent);
+  margin: 0.6em 0;
+  padding: 2px 0 2px 0.8em;
+  color: var(--color-muted);
+}
+.md hr {
+  border: 0;
+  border-top: 1px solid var(--color-border);
+  margin: 1em 0;
+}
+.md table {
+  border-collapse: collapse;
+  margin: 0.6em 0;
+  font-size: 0.95em;
+}
+.md th,
+.md td {
+  border: 1px solid var(--color-border);
+  padding: 4px 8px;
+  text-align: left;
+}
+.md th {
+  background: var(--color-surface-2);
+  font-weight: 600;
+}

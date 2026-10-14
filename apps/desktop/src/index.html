@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!--
+      CSP 不在这里声明，而是由主进程按环境通过响应头下发（见 electron/main/security.ts）。
+      原因：开发模式需要放开内联脚本（Vite HMR / React Refresh preamble），
+      生产模式则应当完全禁止内联脚本。meta 标签是静态的，只能取两者交集 ——
+      要么开发被 CSP 拦死，要么生产白白放宽。
+    -->
+    <title>i-pi-desk</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="./main.tsx"></script>
+  </body>
+</html>

@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "ipi.fixture-plugin",
+  "name": "Fixture Plugin",
+  "version": "1.0.0",
+  "description": "用于验证插件机制的夹具：提供一个回显工具，并附带一个技能目录。",
+  "author": "i-pi-desk",
+  "main": "index.mjs",
+  "permissions": ["agent.tool.register", "fs.read"],
+  "contributes": {
+    "agentTools": [
+      {
+        "name": "fixture_echo",
+        "description": "回显传入的文本，并报告插件进程所处的环境（用于验证宿主是否把完整环境变量传了进来）。",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "text": { "type": "string", "description": "要回显的文本" }
+          },
+          "required": ["text"]
+        }
+      }
+    ],
+    "skills": ["skills"]
+  }
+}

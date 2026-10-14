@@ -1,0 +1,660 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>i-pi-desk · 会话工作台 × 项目 · 10 版完成稿</title>
+<style>
+:root{
+  --page:#dfe5ee;--ink:#0f172a;--muted:#64748b;--line:#c5ced9;
+  --font:"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  --mono:ui-monospace,"Cascadia Mono",Consolas,monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:var(--font);background:
+  radial-gradient(1200px 500px at 10% -10%,#e8f0f6 0%,transparent 55%),
+  radial-gradient(900px 400px at 90% 0%,#eef2f7 0%,transparent 50%),
+  var(--page);color:var(--ink);padding:22px 18px 56px}
+.wrap{max-width:1360px;margin:0 auto}
+h1{margin:0 0 4px;font-size:20px;letter-spacing:-.035em;font-weight:650}
+.lead{margin:0 0 14px;font-size:13.5px;color:var(--muted);line-height:1.65;max-width:920px}
+.thesis{
+  background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:14px;
+  font-size:13px;line-height:1.7;color:#334155;box-shadow:0 1px 0 rgba(255,255,255,.8) inset
+}
+.thesis strong{color:#0f172a}
+.thesis .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px}
+.thesis .box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:10px 12px}
+.thesis .box h3{margin:0 0 6px;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:#64748b;font-weight:600}
+.thesis ul{margin:6px 0 0;padding-left:18px}
+.thesis li{margin:3px 0}
+.rec{
+  margin-top:12px;padding:10px 12px;border-radius:10px;background:linear-gradient(135deg,#0f172a,#1e293b);color:#e2e8f0;
+  font-size:12.5px;line-height:1.55
+}
+.rec b{color:#fff}
+.pickbar{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.pickbar button{
+  border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 12px;
+  font-size:12px;color:#334155;cursor:pointer;transition:.15s
+}
+.pickbar button:hover{border-color:#94a3b8}
+.pickbar button[aria-selected="true"]{background:#0f172a;border-color:#0f172a;color:#fff}
+.meta-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;align-items:center}
+.tag{font-size:11px;padding:3px 8px;border-radius:999px;background:#fff;border:1px solid var(--line);color:#475569}
+.tag.hot{background:#ecfdf5;border-color:#a7f3d0;color:#047857}
+.tag.warn{background:#fff7ed;border-color:#fed7aa;color:#c2410c}
+.frame{
+  height:min(820px,86vh);border-radius:16px;overflow:hidden;border:1px solid #b0bbc9;
+  box-shadow:0 28px 60px -32px rgba(15,23,42,.48);background:#fff;display:none
+}
+.frame.on{display:grid}
+.cap{
+  margin-top:12px;background:#fff;border:1px solid var(--line);border-radius:12px;
+  padding:14px 16px;font-size:13px;color:#475569;line-height:1.6
+}
+.cap b{color:#0f172a}
+.cap .pros{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.cap .p{font-size:11px;padding:3px 8px;border-radius:6px;background:#f1f5f9;color:#334155}
+.cap .c{font-size:11px;padding:3px 8px;border-radius:6px;background:#fef2f2;color:#991b1b}
+
+/* per-shell tokens */
+.t1{--c:#f3f5f8;--s:#fff;--side:#eef1f5;--rail:#e6eaef;--b:#d5dbe3;--i:#152033;--m:#7a8496;--h:#e8edf3;--a:#2f8fa3;--as:#e6f3f6;--ok:#2f8a5b;--err:#b45309}
+.t2{--c:#f6f7f9;--s:#fff;--side:#fafbfc;--rail:#f1f3f6;--b:#e2e5eb;--i:#111827;--m:#8b93a3;--h:#eef1f6;--a:#2563eb;--as:#eff6ff;--ok:#059669;--err:#d97706}
+.t3{--c:#f5f7f4;--s:#fff;--side:#eef2ec;--rail:#e5ebe3;--b:#d2dacd;--i:#1a2118;--m:#6d7968;--h:#e6eee4;--a:#3d8f74;--as:#e7f4ee;--ok:#2f8a5b;--err:#b45309}
+.t4{--c:#f7f6f3;--s:#fff;--side:#f2f0ea;--rail:#ebe7df;--b:#ddd5c8;--i:#1c1915;--m:#7a7164;--h:#ebe6dc;--a:#8a6d4a;--as:#f4ebe0;--ok:#2f8a5b;--err:#b45309}
+.t5{--c:#0e1218;--s:#161b24;--side:#121722;--rail:#0f131b;--b:#2a3140;--i:#e8edf5;--m:#8b95a8;--h:#1c2330;--a:#5eb0c4;--as:#1a2c33;--ok:#3dba7a;--err:#e0a454}
+.t6{--c:#f4f5f8;--s:#fff;--side:#fff;--rail:#eceff4;--b:#e0e4ec;--i:#141926;--m:#7b8496;--h:#eef0f6;--a:#5b6cff;--as:#eef0ff;--ok:#059669;--err:#d97706}
+
+.rail{background:var(--rail);border-right:1px solid var(--b);display:flex;flex-direction:column;align-items:center;padding:10px 0;gap:3px}
+.ri{width:40px;min-height:40px;border-radius:10px;display:grid;place-items:center;color:var(--m);font-size:9px;text-align:center;line-height:1.15;padding:4px 2px}
+.ri.on{background:var(--s);color:var(--i);box-shadow:0 1px 0 rgba(0,0,0,.05)}
+.ri b{display:block;font-weight:550;margin-top:1px}
+.sp{flex:1}
+.side{background:var(--side);border-right:1px solid var(--b);display:flex;flex-direction:column;min-width:0}
+.main{background:var(--c);display:grid;grid-template-rows:42px 1fr auto;min-width:0}
+.insp{background:var(--s);border-left:1px solid var(--b);display:flex;flex-direction:column;min-width:0}
+.hd{height:42px;display:flex;align-items:center;gap:8px;padding:0 12px;border-bottom:1px solid var(--b);font-size:12.5px;color:var(--i)}
+.hd .path{color:var(--m);font-family:var(--mono);font-size:11px}
+.g{flex:1}
+.btn,.pill,.chip,.search,.cta,.ico{font-size:12px}
+.btn{height:32px;border:1px solid var(--b);border-radius:8px;background:var(--s);color:var(--i);display:inline-flex;align-items:center;gap:6px;padding:0 10px;white-space:nowrap}
+.btn.ghost{background:transparent;border-style:dashed;color:var(--m)}
+.btn.pri{background:var(--i);color:#fff;border-color:var(--i)}
+.search{height:30px;border:1px solid var(--b);border-radius:8px;background:var(--s);color:var(--m);display:flex;align-items:center;gap:6px;padding:0 9px}
+.lbl{padding:10px 12px 4px;font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--m);display:flex;gap:6px;align-items:center}
+.lbl .n{margin-left:auto;letter-spacing:0;text-transform:none}
+.row{margin:1px 8px;padding:8px;border-radius:8px;display:flex;align-items:flex-start;gap:8px;font-size:12.5px;color:var(--i);min-width:0}
+.row.on,.row:hover{background:var(--h)}
+.row .t{flex:1;min-width:0}
+.row .t .title{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500}
+.row .t .sum{font-size:11px;color:var(--m);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .meta{font-family:var(--mono);font-size:10px;color:var(--m);padding-top:2px;flex-shrink:0}
+.dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:5px}
+.st{width:14px;text-align:center;color:var(--m);font-size:11px;padding-top:2px;flex-shrink:0}
+.st.run{color:var(--a)}.st.ok{color:var(--ok)}.st.err{color:var(--err)}
+.pg{margin:2px 8px}
+.pg-hd{display:flex;align-items:center;gap:7px;padding:7px 8px;border-radius:8px;font-size:12.5px;color:var(--i)}
+.pg-hd:hover{background:var(--h)}
+.pg-hd .name{flex:1;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.body{overflow:auto;padding:16px 18px}
+.composer{padding:0 14px 12px}
+.box{border:1px solid var(--b);border-radius:10px;background:var(--s);padding:8px 10px;box-shadow:0 1px 0 rgba(0,0,0,.02)}
+.ph{color:var(--m);min-height:36px;font-size:13px;padding:4px 0 8px}
+.foot{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.pill{height:24px;padding:0 8px;border-radius:999px;border:1px solid var(--b);background:var(--h);color:var(--m);display:inline-flex;align-items:center;font-size:11px}
+.send{margin-left:auto;width:28px;height:28px;border-radius:50%;background:var(--i);color:#fff;display:grid;place-items:center;font-size:13px}
+.home{max-width:640px;margin:12px auto;display:grid;gap:12px}
+.home h2{margin:0;font-size:18px;letter-spacing:-.03em;color:var(--i)}
+.home p{margin:0;font-size:13px;color:var(--m);line-height:1.55}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.card{background:var(--s);border:1px solid var(--b);border-radius:10px;padding:11px 12px}
+.card h3{margin:0 0 8px;font-size:10.5px;font-family:var(--mono);letter-spacing:.07em;text-transform:uppercase;color:var(--m);font-weight:550}
+.item{display:flex;align-items:center;gap:8px;padding:7px 0;border-top:1px solid color-mix(in srgb,var(--b) 70%,transparent);font-size:12.5px;color:var(--i)}
+.item:first-of-type{border-top:0}
+.item small{margin-left:auto;color:var(--m);font-family:var(--mono);font-size:10px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{height:26px;padding:0 10px;border-radius:999px;border:1px solid var(--b);background:var(--s);color:var(--i);display:inline-flex;align-items:center;font-size:11.5px}
+.bubble{border:1px solid var(--b);background:var(--s);border-radius:10px;padding:10px 12px;font-size:13px;line-height:1.55;color:var(--i)}
+.bubble.me{background:var(--as)}
+.who{font-family:var(--mono);font-size:10.5px;color:var(--m);margin-bottom:4px}
+.thread{max-width:700px;margin:0 auto;display:grid;gap:12px}
+.itag{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:2px 7px;border-radius:999px;background:var(--h);color:var(--m)}
+.itag.pin{background:#eef6ff;color:#3b6ea8}
+.itag.tmp{background:#f3f4f6;color:#6b7280}
+.itag.ok{background:#ecf8f1;color:#2f8a5b}
+.itag.run{background:var(--as);color:var(--a)}
+.itag.warn{background:#fff7ed;color:#c2410c}
+table.ss{width:100%;border-collapse:collapse;font-size:12.5px}
+table.ss th{text-align:left;font-weight:500;color:var(--m);font-size:11px;padding:8px 6px;border-bottom:1px solid var(--b)}
+table.ss td{padding:10px 6px;border-bottom:1px solid color-mix(in srgb,var(--b) 65%,transparent);color:var(--i);vertical-align:top}
+.sub{font-size:11.5px;color:var(--m);margin-top:2px;line-height:1.4}
+.pcard{border:1px solid var(--b);background:var(--s);border-radius:10px;padding:12px;margin-bottom:8px}
+.pcard.on{border-color:color-mix(in srgb,var(--a) 50%,var(--b));box-shadow:0 0 0 1px color-mix(in srgb,var(--a) 15%,transparent)}
+.tabs{display:flex;gap:2px;padding:8px;border-bottom:1px solid var(--b);flex-wrap:wrap}
+.tabs span{padding:5px 9px;border-radius:6px;font-size:11.5px;color:var(--m)}
+.tabs span.on{background:var(--h);color:var(--i)}
+.diff{font-family:var(--mono);font-size:11px;line-height:1.55}
+.diff .a{color:var(--ok)}.diff .d{color:var(--err)}
+.kanban{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;height:100%;min-height:0}
+.col{background:var(--side);border:1px solid var(--b);border-radius:10px;padding:8px;min-height:0;overflow:auto}
+.col h4{margin:0 0 8px;font-size:11px;color:var(--m);font-weight:600;display:flex;justify-content:space-between}
+.kcard{background:var(--s);border:1px solid var(--b);border-radius:8px;padding:9px;margin-bottom:6px;font-size:12px;cursor:default}
+.topbar{display:flex;align-items:center;gap:6px;padding:8px 12px;border-bottom:1px solid var(--b);background:var(--s)}
+.ptab{height:30px;padding:0 11px;border-radius:8px;border:1px solid transparent;display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--m)}
+.ptab.on{background:var(--h);color:var(--i);border-color:var(--b)}
+.strip{display:flex;gap:8px;padding:8px 12px;border-bottom:1px solid var(--b);background:color-mix(in srgb,var(--c) 75%,var(--s));overflow:auto}
+.sc{min-width:168px;border:1px solid var(--b);background:var(--s);border-radius:9px;padding:8px 10px;font-size:12px}
+.sc.on{border-color:color-mix(in srgb,var(--a) 55%,var(--b))}
+.inbox{display:grid;gap:8px;max-width:760px;margin:0 auto}
+.icard{border:1px solid var(--b);background:var(--s);border-radius:11px;padding:12px 14px;display:grid;grid-template-columns:1fr auto;gap:8px;align-items:start}
+.muted{color:var(--m)}
+.tiny{font-family:var(--mono);font-size:10.5px;color:var(--m)}
+.stat{display:grid;gap:2px}
+.stat b{font-size:16px;color:var(--i);font-weight:650;letter-spacing:-.02em}
+.stat span{font-size:10.5px;color:var(--m)}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:0;min-height:0;height:100%}
+.split > div{min-width:0;overflow:auto}
+.badge{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--i);color:#fff;font-size:10px}
+.seg{display:flex;gap:3px;background:var(--h);padding:3px;border-radius:9px}
+.seg .btn{flex:1;justify-content:center;height:28px;border:0;background:transparent}
+.seg .btn.on{background:var(--s);box-shadow:0 1px 0 rgba(0,0,0,.04);border:1px solid var(--b)}
+.tool{font-size:11.5px;border:1px solid var(--b);border-radius:8px;padding:8px 10px;background:var(--h);margin:6px 0;font-family:var(--mono);color:var(--m)}
+.approve{display:flex;gap:6px;margin-top:8px}
+.approve .btn{height:28px}
+@media (max-width:900px){.thesis .grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>会话工作台 × 项目 · 10 版完成设计稿</h1>
+  <p class="lead">先定产品职责，再选壳。每版都是可点开的完整界面（含会话摘要、状态、项目面），不是局部线框。选中后告诉我字母（如 A / E+I），再落地代码。</p>
+
+  <div class="thesis">
+    <strong>产品判断（多年做 Agent 工作台的结论）</strong>
+    <div class="grid">
+      <div class="box">
+        <h3>项目 = 容器</h3>
+        <ul>
+          <li>一个本地目录 / 仓库 = 一个项目</li>
+          <li>管：路径、颜色、会话集合、项目摘要</li>
+          <li><b>不承载聊天</b>，不做第二种会话列表</li>
+        </ul>
+      </div>
+      <div class="box">
+        <h3>会话工作台 = 驾驶舱</h3>
+        <ul>
+          <li>一次只深挖一个会话</li>
+          <li>管：对话、Composer、审批、右侧产物</li>
+          <li>列表必须可读：类型 + 状态 + 一句话总结 + 时间</li>
+        </ul>
+      </div>
+    </div>
+    <ul style="margin-top:10px">
+      <li><b>关系</b>：项目 1 → 多会话；会话必属项目（「临时」= 默认工作区这个特殊项目）。</li>
+      <li><b>导航</b>：左轨「工作台」进驾驶舱；「项目」进容器总览。日常 80% 时间应停在工作台。</li>
+      <li><b>列表组织</b>：临时 → 置顶 → 按项目折叠；不要一锅乱时间轴。</li>
+    </ul>
+    <div class="rec">
+      <b>默认推荐落地路径：</b>以 <b>A（会话优先）</b> 为底盘，右栏按需常驻取自 <b>E</b>，项目页用 <b>B</b> 的摘要表，窄屏可叠 <b>I</b> 的摘要条。
+      多仓库重度切换再考虑 F；任务感强再加 G；命令党用 H。不要一上来做 D 收件箱（数据模型未成熟时会空）。
+    </div>
+  </div>
+
+  <div class="meta-row">
+    <span class="tag hot">推荐底盘 A</span>
+    <span class="tag">增强 E / I / B</span>
+    <span class="tag warn">后置 D / G</span>
+    <span class="tag">点下方字母切换完整稿</span>
+  </div>
+
+  <div class="pickbar" id="picks" role="tablist"></div>
+  <div id="stage"></div>
+  <div class="cap" id="cap"></div>
+</div>
+
+<script>
+const VERSIONS = [
+  {
+    id:1, key:'A', name:'A · 会话优先（推荐底盘）', theme:'t1',
+    cap:'侧栏：临时→置顶→按项目。工作台空态是控制台，不是海报。项目只是分组；点「项目」轨可进轻量总览。学习成本最低，最贴你们现状。',
+    pros:['上手快','列表可读','贴现状'], cons:['多仓库切换略弱'],
+    html: shellA()
+  },
+  {
+    id:2, key:'B', name:'B · 项目优先中心', theme:'t3',
+    cap:'默认进项目中心：左项目卡、右摘要+会话表。点会话才进工作台。适合同时挂多个仓、常切目录的人。',
+    pros:['容器感强','摘要清晰'], cons:['日常多一步进对话'],
+    html: shellB()
+  },
+  {
+    id:3, key:'C', name:'C · 双模对等切换', theme:'t2',
+    cap:'同一壳内顶栏/段控切换「工作台 | 项目」。信息架构对等，像两个视图。适合两者都重度用、不愿偏科的人。',
+    pros:['心智对称','切换明确'], cons:['默认焦点模糊'],
+    html: shellC()
+  },
+  {
+    id:4, key:'D', name:'D · My Work 收件箱', theme:'t2',
+    cap:'工作台首页=跨项目待办（进行中/待确认/异常）。项目退居过滤。参考 Copilot My Work。需稳定状态机才好看。',
+    pros:['跨项目聚合','审批优先'], cons:['空态难看','模型要求高'],
+    html: shellD()
+  },
+  {
+    id:5, key:'E', name:'E · 三栏产物常驻', theme:'t1',
+    cap:'左会话架 · 中对话 · 右 Changes/Files/终端常开。高级 Agent 工作台标配。项目以色点组出现在左栏。',
+    pros:['改文件可见','专业感'], cons:['窄屏挤'],
+    html: shellE()
+  },
+  {
+    id:6, key:'F', name:'F · 顶栏项目 Tab', theme:'t6',
+    cap:'打开的项目像浏览器标签；每个 Tab 内是该项目会话+工作台。适合同时挂 2～3 个仓库并行。',
+    pros:['多仓并行'], cons:['Tab 易多','临时会话尴尬'],
+    html: shellF()
+  },
+  {
+    id:7, key:'G', name:'G · 会话看板', theme:'t3',
+    cap:'选中项目后，会话按状态看板：新建/进行中/待确认/已完成。强调任务流，弱化纯聊天感。',
+    pros:['任务感强'], cons:['长对话不适合看板'],
+    html: shellG()
+  },
+  {
+    id:8, key:'H', name:'H · 极简命令式', theme:'t5',
+    cap:'暗色、少装饰。列表很瘦；项目/会话主要靠 ⌘K。给「嫌花哨」的重度用户。',
+    pros:['干净','键盘流'], cons:['新手迷路'],
+    html: shellH()
+  },
+  {
+    id:9, key:'I', name:'I · 摘要条 + 工作台', theme:'t1',
+    cap:'工作台上方横滑「当前项目会话摘要条」；点击切换会话。日常几乎不离开对话面。',
+    pros:['切换快','摘要可见'], cons:['条上信息易挤'],
+    html: shellI()
+  },
+  {
+    id:10, key:'J', name:'J · ADE 项目树分屏', theme:'t4',
+    cap:'左固定项目树+会话树，右整块工作台；可选半屏项目摘要。像小型 IDE Explorer。信息密度最高。',
+    pros:['层级清晰','宽屏爽'], cons:['窄屏需折叠'],
+    html: shellJ()
+  }
+]
+
+const picks = document.getElementById('picks')
+const stage = document.getElementById('stage')
+const cap = document.getElementById('cap')
+
+VERSIONS.forEach((v, i) => {
+  const b = document.createElement('button')
+  b.type = 'button'
+  b.textContent = v.name
+  b.setAttribute('aria-selected', i === 0 ? 'true' : 'false')
+  b.onclick = () => show(v.id)
+  picks.appendChild(b)
+  const fr = document.createElement('div')
+  fr.className = `frame ${v.theme}` + (i === 0 ? ' on' : '')
+  fr.id = `f${v.id}`
+  fr.innerHTML = v.html
+  stage.appendChild(fr)
+})
+renderCap(VERSIONS[0])
+
+function show(id) {
+  const v = VERSIONS.find(x => x.id === id)
+  ;[...picks.children].forEach((b, i) => b.setAttribute('aria-selected', VERSIONS[i].id === id ? 'true' : 'false'))
+  VERSIONS.forEach(x => document.getElementById(`f${x.id}`).classList.toggle('on', x.id === id))
+  renderCap(v)
+}
+
+function renderCap(v) {
+  cap.innerHTML = `<b>${v.name}</b> — ${v.cap}<div class="pros">${(v.pros||[]).map(x=>`<span class="p">✓ ${x}</span>`).join('')}${(v.cons||[]).map(x=>`<span class="c">△ ${x}</span>`).join('')}</div>`
+}
+
+function rail(active) {
+  const items = [['工作台','⌂'],['定时','◷'],['项目','▤']]
+  return `<aside class="rail">${items.map(([n,i]) => `<div class="ri${active===n?' on':''}">${i}<b>${n}</b></div>`).join('')}<div class="sp"></div><div class="ri">⚙<b>设置</b></div></aside>`
+}
+
+function composer(ws='未选目录') {
+  return `<div class="composer"><div class="box"><div class="ph">描述任务，或粘贴报错…</div><div class="foot"><span class="pill">${ws}</span><span class="pill">模型 · Auto</span><span class="pill">每次询问</span><div class="send">↑</div></div></div></div>`
+}
+
+function srow(opts) {
+  const {st='○', stCls='', title, sum, meta, on=false} = opts
+  return `<div class="row${on?' on':''}"><span class="st ${stCls}">${st}</span><div class="t"><div class="title">${title}</div>${sum?`<div class="sum">${sum}</div>`:''}</div><span class="meta">${meta||''}</span></div>`
+}
+
+function shellA(){
+  return `<div style="display:grid;grid-template-columns:48px 286px 1fr;height:100%">
+  ${rail('工作台')}
+  <aside class="side">
+    <div style="padding:12px;display:grid;gap:6px">
+      <div class="btn">⚡ 快捷会话</div>
+      <div class="btn ghost">＋ 新会话</div>
+      <div class="search">⌕ 搜索会话 / 总结</div>
+    </div>
+    <div style="overflow:auto;flex:1">
+      <div class="lbl">临时会话 <span class="n">默认区 · 2</span></div>
+      ${srow({st:'○', title:'随手问目录', sum:'默认区草稿 · 未绑仓库', meta:'1时'})}
+      ${srow({st:'○', title:'看一下 package.json', sum:'临时探查', meta:'3时'})}
+      <div class="lbl">置顶 <span class="n">2</span></div>
+      ${srow({st:'◉', stCls:'run', title:'排查网关切流', sum:'ALB /uc 路由核对中 · 待你确认写文件', meta:'跑', on:true})}
+      ${srow({st:'✓', stCls:'ok', title:'字段配置 SQL', sum:'已生成迁移脚本', meta:'昨天'})}
+      <div class="lbl">按项目</div>
+      <div class="pg"><div class="pg-hd"><span class="dot" style="background:#3d8fa3"></span><span class="name">a3-lib</span><span class="meta">4 ▾</span></div>
+        ${srow({st:'✓', stCls:'ok', title:'新建 utils.ts', sum:'已落文件并导出', meta:'今天'})}
+        ${srow({st:'!', stCls:'err', title:'本地 proxy', sum:'环境变量未注入 · 上次失败', meta:'异常'})}
+        ${srow({st:'○', title:'主题清新化', sum:'tokens 已收敛，待装包验收', meta:'昨天'})}
+      </div>
+      <div class="pg"><div class="pg-hd"><span class="dot" style="background:#c4a574"></span><span class="name">a3-expert-square</span><span class="meta">2 ▸</span></div></div>
+    </div>
+  </aside>
+  <section class="main">
+    <div class="hd"><span>工作台 · 未选会话</span><span class="path">驾驶舱空态</span><div class="g"></div><span class="pill">⌕</span><span class="pill">▥ 产物</span></div>
+    <div class="body"><div class="home">
+      <h2>选择工作区，开始任务</h2>
+      <p>会话工作台 = 当前任务驾驶舱。项目只在左侧分组出现；需要总览时点左轨「项目」。</p>
+      <div class="btn pri" style="width:fit-content">📁 选择工作目录</div>
+      <div class="grid3">
+        <div class="card stat"><b>7</b><span>最近会话</span></div>
+        <div class="card stat"><b>1</b><span>进行中</span></div>
+        <div class="card stat"><b>1</b><span>待确认</span></div>
+      </div>
+      <div class="grid2">
+        <div class="card"><h3>最近目录</h3><div class="item">a3-lib<small>今天</small></div><div class="item">expert-square<small>2天</small></div><div class="item">a3-talent-libary<small>上周</small></div></div>
+        <div class="card"><h3>继续会话</h3><div class="item">排查网关切流<small>置顶·跑</small></div><div class="item">新建 utils.ts<small>完成</small></div><div class="item">本地 proxy<small>异常</small></div></div>
+      </div>
+      <div class="chips"><span class="chip">项目结构</span><span class="chip">找 TODO</span><span class="chip">要改哪些文件</span><span class="chip">解释报错</span></div>
+    </div></div>
+    ${composer()}
+  </section></div>`
+}
+
+function shellB(){
+  return `<div style="display:grid;grid-template-columns:48px 1fr;height:100%">
+  ${rail('项目')}
+  <section style="display:grid;grid-template-rows:42px 1fr;min-width:0;background:var(--c)">
+    <div class="hd"><strong>项目中心</strong><span class="path">容器总览 · 不承载聊天</span><div class="g"></div><div class="search" style="width:220px">⌕ 项目 / 会话总结</div><div class="btn pri" style="height:28px">打开目录</div></div>
+    <div style="display:grid;grid-template-columns:300px 1fr;min-height:0">
+      <div style="border-right:1px solid var(--b);background:var(--side);padding:12px;overflow:auto">
+        <div class="pcard on">
+          <div style="display:flex;gap:8px;align-items:center;font-weight:600"><span class="dot" style="background:#4a8f7a;margin:0"></span>a3-lib</div>
+          <div class="tiny" style="margin-top:4px">D:\\work\\code\\shudao\\a3-lib</div>
+          <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap"><span class="itag">会话 7</span><span class="itag run">进行中 1</span><span class="itag warn">异常 1</span></div>
+        </div>
+        <div class="pcard">
+          <div style="display:flex;gap:8px;align-items:center;font-weight:600"><span class="dot" style="background:#c4a574;margin:0"></span>a3-expert-square</div>
+          <div class="tiny" style="margin-top:4px">…\\a3-expert-square</div>
+          <div style="margin-top:8px;display:flex;gap:6px"><span class="itag">会话 4</span><span class="itag">空闲</span></div>
+        </div>
+        <div class="pcard">
+          <div style="display:flex;gap:8px;align-items:center;font-weight:600"><span class="dot" style="background:#94a3b8;margin:0"></span>临时 / 默认区</div>
+          <div class="tiny" style="margin-top:4px">未绑定目录的草稿会话</div>
+          <div style="margin-top:8px"><span class="itag tmp">临时 2</span></div>
+        </div>
+      </div>
+      <div style="padding:18px 22px;overflow:auto">
+        <div class="grid3" style="margin-bottom:12px">
+          <div class="card stat"><b>7</b><span>会话</span></div>
+          <div class="card stat"><b>1</b><span>待确认</span></div>
+          <div class="card stat"><b>+24/−3</b><span>最近改动</span></div>
+        </div>
+        <div class="card" style="margin-bottom:12px"><h3>项目摘要</h3><p style="margin:0;font-size:13px;line-height:1.65;color:var(--i)">最近在做桌面壳与主题清新化。未关闭：proxy 联调（异常）、网关切流（待确认写文件）。建议先处理待确认，再开新任务。</p></div>
+        <div class="card" style="padding:0;overflow:hidden">
+          <div style="padding:12px 14px;display:flex;gap:6px;align-items:center;flex-wrap:wrap"><strong style="flex:1;font-size:13px">会话一览</strong><span class="itag tmp">临时</span><span class="itag pin">置顶</span><span class="itag ok">完成</span><span class="itag run">进行中</span></div>
+          <table class="ss"><thead><tr><th>类型</th><th>标题 / 总结</th><th>状态</th><th>更新</th></tr></thead>
+          <tbody>
+            <tr><td><span class="itag pin">置顶</span></td><td>排查网关切流<div class="sub">ALB /uc 路由核对中 · 等待确认写文件</div></td><td><span class="itag run">进行中</span></td><td class="tiny">刚刚</td></tr>
+            <tr><td><span class="itag">普通</span></td><td>本地 proxy<div class="sub">UMI_APP_ENV 未注入导致 proxy 不生效</div></td><td><span class="itag warn">异常</span></td><td class="tiny">2时</td></tr>
+            <tr><td><span class="itag">普通</span></td><td>新建 utils.ts<div class="sub">已落文件并导出</div></td><td><span class="itag ok">完成</span></td><td class="tiny">今天</td></tr>
+            <tr><td><span class="itag tmp">临时</span></td><td>随手问目录<div class="sub">默认区草稿</div></td><td>○</td><td class="tiny">1时</td></tr>
+          </tbody></table>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:12px"><div class="btn pri">打开工作台 · 切流</div><div class="btn">＋ 新建会话</div><div class="btn ghost">归档已完成</div></div>
+      </div>
+    </div>
+  </section></div>`
+}
+
+function shellC(){
+  return `<div style="display:grid;grid-template-columns:48px 268px 1fr;height:100%">
+  ${rail('工作台')}
+  <aside class="side">
+    <div style="padding:10px;display:grid;gap:8px">
+      <div class="seg">
+        <div class="btn on">工作台</div>
+        <div class="btn">项目</div>
+      </div>
+      <div class="search">⌕ 当前视图内搜索</div>
+      <div class="btn ghost" style="justify-content:center">＋ 新会话</div>
+    </div>
+    <div class="lbl">置顶</div>
+    ${srow({st:'◉', stCls:'run', title:'排查网关切流', sum:'待确认写文件', meta:'跑', on:true})}
+    <div class="lbl">a3-lib</div>
+    ${srow({st:'✓', stCls:'ok', title:'新建 utils.ts', sum:'已落盘', meta:'今天'})}
+    ${srow({st:'!', stCls:'err', title:'本地 proxy', sum:'上次失败', meta:'异常'})}
+    ${srow({st:'○', title:'主题清新化', sum:'tokens 收敛', meta:'昨天'})}
+  </aside>
+  <section class="main">
+    <div class="hd"><span style="font-weight:600">工作台</span><span class="path">与「项目」对等 · 当前在驾驶舱</span><div class="g"></div><span class="pill">切到项目视图 →</span></div>
+    <div class="body"><div class="thread">
+      <div><div class="who">你</div><div class="bubble me">继续昨天的切流排查，先对齐 ALB 规则。</div></div>
+      <div><div class="who">助手</div><div class="bubble">从 ALB 规则与 <code>/uc</code> 前缀对齐开始。已定位两处：网关路由与前端 proxy 最长前缀匹配。<div class="tool">read · config/proxy.ts</div><div class="approve"><div class="btn pri" style="height:28px">确认写文件</div><div class="btn" style="height:28px">跳过</div></div></div></div>
+    </div></div>
+    ${composer('a3-lib')}
+  </section></div>`
+}
+
+function shellD(){
+  return `<div style="display:grid;grid-template-columns:48px 248px 1fr;height:100%">
+  ${rail('工作台')}
+  <aside class="side">
+    <div style="padding:12px;display:grid;gap:4px">
+      <div class="search">⌕ 过滤 My Work</div>
+      <div class="row on"><span class="t"><div class="title">全部待办</div></span><span class="badge">5</span></div>
+      <div class="row"><span class="t"><div class="title">待我确认</div></span><span class="meta">1</span></div>
+      <div class="row"><span class="t"><div class="title">异常</div></span><span class="meta">1</span></div>
+      <div class="row"><span class="t"><div class="title">进行中</div></span><span class="meta">2</span></div>
+      <div class="lbl">项目过滤</div>
+      <div class="row"><span class="dot" style="background:#3d8fa3"></span><span class="t"><div class="title">a3-lib</div></span></div>
+      <div class="row"><span class="dot" style="background:#c4a574"></span><span class="t"><div class="title">expert-square</div></span></div>
+      <div class="row"><span class="dot" style="background:#94a3b8"></span><span class="t"><div class="title">临时区</div></span></div>
+    </div>
+  </aside>
+  <section class="main">
+    <div class="hd"><strong>My Work</strong><span class="path">跨项目 · 需要你处理的事</span><div class="g"></div><div class="btn">刷新</div></div>
+    <div class="body"><div class="inbox">
+      <div class="icard"><div><b>排查网关切流</b><div class="sub">a3-lib · 等待你确认一条写文件 · ALB /uc</div></div><span class="itag warn">待确认</span></div>
+      <div class="icard"><div><b>本地 proxy</b><div class="sub">a3-lib · 上次运行失败 · 环境变量</div></div><span class="itag warn">异常</span></div>
+      <div class="icard"><div><b>Pgy 下单重试</b><div class="sub">expert-square · agent 后台执行中</div></div><span class="itag run">进行中</span></div>
+      <div class="icard"><div><b>字段配置 SQL</b><div class="sub">a3-lib · 可归档</div></div><span class="itag ok">完成</span></div>
+      <div class="icard"><div><b>随手问目录</b><div class="sub">临时区 · 草稿</div></div><span class="itag tmp">临时</span></div>
+    </div></div>
+    ${composer('跨项目上下文')}
+  </section></div>`
+}
+
+function shellE(){
+  return `<div style="display:grid;grid-template-columns:48px 252px 1fr 310px;height:100%">
+  ${rail('工作台')}
+  <aside class="side">
+    <div style="padding:10px;display:grid;gap:6px"><div class="btn">⚡ 快捷会话</div><div class="search">⌕</div></div>
+    <div class="lbl">置顶</div>
+    ${srow({st:'◉', stCls:'run', title:'排查网关切流', sum:'写文件待确认', meta:'跑', on:true})}
+    <div class="lbl">项目</div>
+    <div class="pg"><div class="pg-hd"><span class="dot" style="background:#3d8fa3"></span><span class="name">a3-lib</span><span class="meta">▾</span></div>
+      ${srow({st:'✓', stCls:'ok', title:'utils.ts', sum:'已落盘', meta:'今天'})}
+      ${srow({st:'!', stCls:'err', title:'proxy', sum:'失败', meta:'!'})}
+    </div>
+    <div class="pg"><div class="pg-hd"><span class="dot" style="background:#c4a574"></span><span class="name">expert-square</span><span class="meta">▸</span></div></div>
+  </aside>
+  <section class="main">
+    <div class="hd"><b>a3-lib</b><span class="path">master · 排查网关切流</span><div class="g"></div><span class="pill">+24/−3</span></div>
+    <div class="body"><div class="thread">
+      <div><div class="who">你</div><div class="bubble me">标出前后端入口，并改掉过时的 amber 色。</div></div>
+      <div><div class="who">助手 · 已改 2 文件</div><div class="bubble">见右侧 Changes。主题 accent 已从 amber 收到 teal。<div class="tool">edit · src/styles/theme.css</div></div></div>
+    </div></div>
+    ${composer('a3-lib')}
+  </section>
+  <aside class="insp">
+    <div class="hd"><b>产物</b><span class="tiny">常驻</span></div>
+    <div class="tabs"><span class="on">Changes</span><span>Files</span><span>Terminal</span><span>Plan</span></div>
+    <div style="padding:12px;font-size:12.5px;overflow:auto;flex:1">
+      <div class="muted" style="margin-bottom:8px">本次会话 · +24 / −3</div>
+      <div style="font-weight:600;margin-bottom:4px">styles/theme.css</div>
+      <div class="diff d">- --accent: #d97706;</div>
+      <div class="diff a">+ --accent: #2f8fa3;</div>
+      <div style="font-weight:600;margin:12px 0 4px">Sidebar.tsx</div>
+      <div class="diff a">+ section: 临时 / 置顶 / 按项目</div>
+      <div style="margin-top:14px;display:flex;gap:6px"><div class="btn pri" style="height:28px">全部应用</div><div class="btn" style="height:28px">逐条审</div></div>
+    </div>
+  </aside></div>`
+}
+
+function shellF(){
+  return `<div style="display:grid;grid-template-rows:46px 1fr;height:100%;background:var(--c)">
+  <div class="topbar">
+    <div class="ptab on"><span class="dot" style="background:#5b6cff;margin:0"></span>a3-lib <span class="tiny">×</span></div>
+    <div class="ptab"><span class="dot" style="background:#c4a574;margin:0"></span>expert-square <span class="tiny">×</span></div>
+    <div class="ptab"><span class="dot" style="background:#94a3b8;margin:0"></span>临时 <span class="tiny">×</span></div>
+    <div class="ptab">＋</div>
+    <div class="g"></div>
+    <div class="search" style="width:180px">⌕ 全局</div>
+    <div class="btn" style="height:28px">工作台</div>
+  </div>
+  <div style="display:grid;grid-template-columns:248px 1fr;min-height:0">
+    <aside class="side" style="border-left:0">
+      <div class="lbl">此项目会话 <span class="n">a3-lib</span></div>
+      ${srow({st:'◉', stCls:'run', title:'排查网关切流', sum:'待确认写文件', meta:'跑', on:true})}
+      ${srow({st:'✓', stCls:'ok', title:'新建 utils.ts', sum:'已落盘', meta:'今天'})}
+      ${srow({st:'○', title:'主题清新化', sum:'tokens', meta:'昨天'})}
+      <div style="padding:10px;display:grid;gap:6px"><div class="btn" style="width:100%;justify-content:center">＋ 会话</div><div class="btn ghost" style="width:100%;justify-content:center">项目摘要</div></div>
+    </aside>
+    <section class="main">
+      <div class="hd"><span>工作台 · a3-lib Tab</span><span class="path">切 Tab = 切容器</span><div class="g"></div></div>
+      <div class="body"><div class="thread">
+        <div><div class="who">你</div><div class="bubble me">在当前项目 Tab 里继续，不要串到 expert-square。</div></div>
+        <div><div class="who">助手</div><div class="bubble">上下文已锁定 a3-lib。Composer 底部工作区徽标与 Tab 一致。</div></div>
+      </div></div>
+      ${composer('a3-lib')}
+    </section>
+  </div></div>`
+}
+
+function shellG(){
+  return `<div style="display:grid;grid-template-columns:48px 220px 1fr;height:100%">
+  ${rail('项目')}
+  <aside class="side">
+    <div style="padding:10px;display:grid;gap:6px"><div class="search">⌕ 项目</div><div class="btn ghost" style="justify-content:center">＋ 打开目录</div></div>
+    <div class="row on"><span class="dot" style="background:#4a8f7a"></span><span class="t"><div class="title">a3-lib</div><div class="sum">7 会话</div></span></div>
+    <div class="row"><span class="dot" style="background:#c4a574"></span><span class="t"><div class="title">expert-square</div><div class="sum">4 会话</div></span></div>
+    <div class="row"><span class="dot" style="background:#94a3b8"></span><span class="t"><div class="title">临时 / 默认区</div><div class="sum">2</div></span></div>
+  </aside>
+  <section style="display:grid;grid-template-rows:42px 1fr;background:var(--c);min-width:0">
+    <div class="hd"><b>a3-lib · 会话看板</b><span class="path">按状态编排 · 点卡片进工作台</span><div class="g"></div><div class="btn pri" style="height:28px">打开选中</div></div>
+    <div class="body" style="padding:12px"><div class="kanban">
+      <div class="col"><h4>新建 <span>1</span></h4><div class="kcard"><b>随手问目录</b><div class="tiny">临时 · 1时</div><div class="sub">未绑仓库</div></div></div>
+      <div class="col"><h4>进行中 <span>1</span></h4><div class="kcard" style="outline:1px solid color-mix(in srgb,var(--a) 40%,transparent)"><b>排查网关切流</b><div class="tiny">置顶 · 刚刚</div><div class="sub">ALB 核对</div></div></div>
+      <div class="col"><h4>待确认 <span>1</span></h4><div class="kcard"><b>写文件审批</b><div class="tiny">需要你</div><div class="sub">theme.css</div></div></div>
+      <div class="col"><h4>已完成 <span>2</span></h4><div class="kcard"><b>utils.ts</b><div class="tiny">今天</div></div><div class="kcard"><b>主题清新化</b><div class="tiny">昨天</div></div></div>
+    </div></div>
+  </section></div>`
+}
+
+function shellH(){
+  return `<div style="display:grid;grid-template-columns:52px 196px 1fr;height:100%">
+  ${rail('工作台')}
+  <aside class="side">
+    <div style="padding:10px;display:grid;gap:8px">
+      <div class="btn pri" style="justify-content:center">⌘K</div>
+      <div class="tiny">项目 / 会话 / 命令</div>
+    </div>
+    <div class="lbl">活跃</div>
+    <div class="row on"><span class="t"><div class="title">切流</div><div class="sum">a3-lib</div></span><span class="meta">◉</span></div>
+    <div class="row"><span class="t"><div class="title">proxy</div><div class="sum">a3-lib</div></span><span class="meta">!</span></div>
+    <div class="row"><span class="t"><div class="title">utils</div><div class="sum">a3-lib</div></span><span class="meta">✓</span></div>
+    <div class="lbl">项目</div>
+    <div class="row"><span class="t"><div class="title">a3-lib</div></span></div>
+    <div class="row"><span class="t"><div class="title">expert…</div></span></div>
+  </aside>
+  <section class="main">
+    <div class="hd"><span class="path">a3-lib / 排查网关切流</span><div class="g"></div><span class="tiny">denser · less chrome</span></div>
+    <div class="body"><div class="thread">
+      <div><div class="bubble me">继续。</div></div>
+      <div><div class="bubble">对齐 ALB 与 <code>/uc</code>。右侧产物折叠；用 ⌘K 跳会话。</div></div>
+    </div></div>
+    ${composer('a3-lib')}
+  </section></div>`
+}
+
+function shellI(){
+  return `<div style="display:grid;grid-template-columns:48px 240px 1fr;height:100%">
+  ${rail('工作台')}
+  <aside class="side">
+    <div style="padding:10px;display:grid;gap:6px"><div class="btn">⚡ 快捷会话</div><div class="search">⌕</div></div>
+    <div class="lbl">按项目</div>
+    <div class="pg"><div class="pg-hd"><span class="dot" style="background:#3d8fa3"></span><span class="name">a3-lib</span><span class="meta">▾</span></div>
+      ${srow({st:'◉', stCls:'run', title:'排查网关切流', sum:'ALB 核对', meta:'跑', on:true})}
+      ${srow({st:'✓', stCls:'ok', title:'utils.ts', sum:'已落盘', meta:'今天'})}
+    </div>
+  </aside>
+  <section class="main" style="grid-template-rows:42px auto 1fr auto">
+    <div class="hd"><b>a3-lib</b><span class="path">工作台 · 摘要条切换会话</span><div class="g"></div><div class="btn" style="height:28px">项目页</div></div>
+    <div class="strip">
+      <div class="sc on"><b>排查网关切流</b><div class="sub">进行中 · ALB 核对 · 待确认</div></div>
+      <div class="sc"><b>utils.ts</b><div class="sub">完成 · 已落盘</div></div>
+      <div class="sc"><b>proxy 联调</b><div class="sub">异常 · 环境变量</div></div>
+      <div class="sc"><b>主题清新化</b><div class="sub">草稿 · tokens</div></div>
+      <div class="sc"><b>＋ 新会话</b><div class="sub">在此项目</div></div>
+    </div>
+    <div class="body"><div class="thread">
+      <div><div class="who">当前会话</div><div class="bubble">摘要条切换会话，无需回左栏翻长列表。每张卡带一句话总结与状态。</div></div>
+      <div><div class="who">助手</div><div class="bubble">建议摘要条只显示当前项目内会话；跨项目仍走左栏或 ⌘K。</div></div>
+    </div></div>
+    ${composer('a3-lib')}
+  </section></div>`
+}
+
+function shellJ(){
+  return `<div style="display:grid;grid-template-columns:48px 300px 1fr;height:100%">
+  ${rail('工作台')}
+  <aside class="side">
+    <div style="padding:10px;display:grid;gap:6px"><div class="search">⌕ 树内过滤</div>
+      <div style="display:flex;gap:6px"><div class="btn" style="flex:1;justify-content:center;height:28px">展开</div><div class="btn ghost" style="flex:1;justify-content:center;height:28px">折叠</div></div>
+    </div>
+    <div class="lbl">项目树</div>
+    <div style="padding:0 10px 12px;font-size:12.5px;color:var(--i);line-height:1.45;overflow:auto;flex:1">
+      <div style="padding:6px 0;font-weight:650;display:flex;align-items:center;gap:6px">▾ <span class="dot" style="display:inline-block;background:#8a6d4a;margin:0"></span> a3-lib <span class="tiny" style="margin-left:auto">7</span></div>
+      <div style="padding:4px 0 2px 18px" class="muted tiny">置顶</div>
+      <div style="padding:6px 8px 6px 28px;background:var(--h);border-radius:7px;margin:2px 0">◉ 排查网关切流<div class="tiny">ALB /uc · 待确认</div></div>
+      <div style="padding:4px 0 2px 18px" class="muted tiny">会话</div>
+      <div style="padding:5px 0 5px 28px">✓ 新建 utils.ts <span class="tiny">今天</span></div>
+      <div style="padding:5px 0 5px 28px">! 本地 proxy <span class="tiny">异常</span></div>
+      <div style="padding:5px 0 5px 28px">○ 主题清新化</div>
+      <div style="padding:10px 0 4px;font-weight:650;display:flex;align-items:center;gap:6px">▸ <span class="dot" style="display:inline-block;background:#c4a574;margin:0"></span> expert-square <span class="tiny" style="margin-left:auto">4</span></div>
+      <div style="padding:6px 0;font-weight:650">▸ 临时 / 默认区 <span class="tiny">2</span></div>
+    </div>
+  </aside>
+  <div class="split" style="background:var(--c)">
+    <section class="main" style="border-right:1px solid var(--b)">
+      <div class="hd"><span>工作台</span><span class="path">左树选会话</span><div class="g"></div></div>
+      <div class="body"><div class="thread">
+        <div><div class="who">你</div><div class="bubble me">宽屏 ADE：项目与会话层级一眼看清。</div></div>
+        <div><div class="who">助手</div><div class="bubble">适合同时看多仓库结构；窄屏把右半项目摘要折起来即可。</div></div>
+      </div></div>
+      ${composer('a3-lib')}
+    </section>
+    <aside style="background:var(--s);display:flex;flex-direction:column">
+      <div class="hd"><b>项目摘要</b><span class="tiny">可选半屏</span></div>
+      <div style="padding:14px;overflow:auto;flex:1">
+        <div class="card" style="margin-bottom:10px"><h3>a3-lib</h3><p style="margin:0;font-size:12.5px;line-height:1.55;color:var(--i)">桌面壳 + 主题清新化进行中。待确认：切流写文件。异常：proxy。</p></div>
+        <div class="card"><h3>本项目会话</h3>
+          <div class="item">切流<span class="itag run">跑</span></div>
+          <div class="item">proxy<span class="itag warn">异常</span></div>
+          <div class="item">utils<small>完成</small></div>
+        </div>
+      </div>
+    </aside>
+  </div></div>`
+}
+</script>
+</body>
+</html>

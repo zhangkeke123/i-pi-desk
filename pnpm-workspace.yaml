@@ -1,0 +1,28 @@
+packages:
+  - apps/*
+  - packages/*
+
+# 依赖的安装脚本是否允许执行。pnpm 10+ 默认全拦；pnpm 11 用 allowBuilds 逐个声明，
+# 未声明的会以 ERR_PNPM_IGNORED_BUILDS 直接失败（退出码 1），所以必须穷举。
+allowBuilds:
+  # 需要：下载 Electron 二进制。
+  electron: true
+  # 需要：Vite 依赖它的原生二进制。
+  esbuild: true
+  # 需要：Tailwind 4 的 Rust 原生绑定。
+  '@tailwindcss/oxide': true
+  # 需要：本地 SQLite 原生模块（持久化用）。
+  better-sqlite3: true
+  # 需要：终端面板的 PTY 原生模块，必须按 Electron 的 ABI 重新编译。
+  node-pty: true
+
+  # 不需要：pi-ai 的 Google provider 我们暂不使用图形/媒体能力。
+  '@google/genai': false
+  # 不需要：只在打 Windows 安装包时才用到的构建脚本（postinstall 只是检查）。
+  electron-winstaller: false
+  # 不需要：pi-ai 传递依赖，它的 install 脚本只打印提示信息。
+  protobufjs: false
+
+# @earendil-works/pi-* 1.1.0 发布时间很短，pnpm 的「最小发布年龄」会把它挡掉。
+# 显式关掉，避免安装时被静默降级到旧版本。
+minimumReleaseAge: 0
