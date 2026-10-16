@@ -18,7 +18,7 @@ import {
   X,
   XCircle
 } from 'lucide-react'
-import type { AppSettings, ProviderApiStyle, ProviderConfig, ProviderView } from '@i-pi-desk/shared'
+import type { AppSettings, ProviderApiStyle, ProviderConfig, ProviderView, UpdateStatus } from '@i-pi-desk/shared'
 import { useAppStore } from '../../stores/app-store.js'
 import { call, getDesk, IpcError } from '../../lib/desk.js'
 import {
@@ -594,6 +594,8 @@ function GeneralSettings({
         </div>
       </Row>
 
+      <UpdateRow />
+
       <p className="text-xs text-[var(--color-muted)]">
         权限、步数与思考强度已移至左侧「AI」；模型列表在「模型 provider」。
       </p>
@@ -604,6 +606,64 @@ function GeneralSettings({
         </p>
       )}
     </section>
+  )
+}
+
+function UpdateRow(): React.ReactElement {
+  const [status, setStatus] = useState<UpdateStatus | null>(null)
+  const [busy, setBusy] = useState(false)
+
+  useEffect(() => {
+    let alive = true
+    void call(getDesk().app.updateStatus()).then((next) => {
+      if (alive) setStatus(next)
+    })
+    const off = getDesk().events.onUpdate((next) => setStatus(next))
+    return () => {
+      alive = false
+      off()
+    }
+  }, [])
+
+  const check = async (): Promise<void> => {
+    setBusy(true)
+    try {
+      setStatus(await call(getDesk().app.updateCheck()))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const install = async (): Promise<void> => {
+    setBusy(true)
+    try {
+      setStatus(await call(getDesk().app.updateInstall()))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const phase = status?.phase
+  return (
+    <Row label="应用更新" hint={status?.message ?? '读取更新状态…'}>
+      <div className="flex flex-wrap gap-1.5">
+        {phase === 'notify' ? (
+          <button type="button" className="btn btn-outline h-7 px-2.5 text-2xs" onClick={() => void call(getDesk().app.updateOpen())}>
+            打开发布页
+          </button>
+        ) : null}
+        {phase === 'ready' ? (
+          <button type="button" className="btn btn-primary h-7 px-2.5 text-2xs" disabled={busy} onClick={() => void install()}>
+            重启以更新
+          </button>
+        ) : null}
+        {phase !== 'disabled' && phase !== 'notify' ? (
+          <button type="button" className="btn btn-outline h-7 px-2.5 text-2xs" disabled={busy || phase === 'checking' || phase === 'downloading'} onClick={() => void check()}>
+            {busy ? '请稍候…' : '检查更新'}
+          </button>
+        ) : null}
+      </div>
+    </Row>
   )
 }
 

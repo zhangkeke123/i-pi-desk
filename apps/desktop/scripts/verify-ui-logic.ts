@@ -26,6 +26,8 @@ import {
 } from '../src/lib/run-status.ts'
 import { APPROVAL_TIMEOUT_NOTE, approvalTimer, formatCountdown } from '../src/lib/approval-timer.ts'
 import { composerBlocker } from '../src/lib/composer-blocker.ts'
+import { summarizeSteps } from '../src/lib/step-summary.ts'
+import { hiddenContextNote } from '../src/lib/message-window.ts'
 import { summarizeRun } from '../src/lib/run-summary.ts'
 import { GENERIC_STARTERS, buildStarters, emptyStateTitle } from '../src/lib/starters.ts'
 import { SHORTCUTS, displayKeys, shortcutFor, shortcutsByGroup, tooltipWithShortcut } from '../src/lib/shortcuts.ts'
@@ -182,6 +184,33 @@ console.log('\n── 不能发送时的说明（不能只说「缺什么」而�
   const stubOnly = composerBlocker({ hasWorkspace: true, enabledProviders: 1, onlyStubProviders: true })
   check('只有假模型时也要拦', stubOnly !== null && stubOnly.action === 'open-settings')
   check('每个分支都带可点的入口文案', [noWorkspace, noModel].every((b) => (b?.actionLabel ?? '').length > 0))
+}
+
+console.log('\n── 步骤摘要：成功默认收起，问题要浮出来 ──')
+{
+  const ok = summarizeSteps([
+    { kind: 'tool-call', callId: '1', name: 'read', args: {}, state: 'succeeded' },
+    { kind: 'tool-call', callId: '2', name: 'read', args: {}, state: 'succeeded' }
+  ])
+  check('全部成功时默认收起', ok.startOpen === false && ok.issues === 0 && ok.total === 2)
+
+  const failed = summarizeSteps([
+    { kind: 'tool-call', callId: '1', name: 'read', args: {}, state: 'succeeded' },
+    { kind: 'tool-call', callId: '2', name: 'bash', args: {}, state: 'failed', error: 'exit 1' }
+  ])
+  check('有失败时展开并计问题', failed.startOpen === true && failed.issues === 1)
+
+  const pending = summarizeSteps([
+    { kind: 'approval', approvalId: 'a', callId: '1', toolName: 'write', args: {} }
+  ])
+  check('未裁决的审批默认展开', pending.startOpen === true && pending.issues === 0)
+
+  const denied = summarizeSteps([
+    { kind: 'approval', approvalId: 'a', callId: '1', toolName: 'write', args: {}, decision: 'deny' }
+  ])
+  check('已拒绝算问题且不必再展开', denied.issues === 1 && denied.startOpen === false)
+
+  check('折叠说明点明模型看不到更早消息', hiddenContextNote(12).includes('不发给模型') && hiddenContextNote(0) === '')
 }
 
 

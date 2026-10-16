@@ -1287,6 +1287,12 @@ body {
     color: var(--color-muted);
   }
 
+  .turn-steps__issues {
+    margin-left: auto;
+    font-size: 11px;
+    color: var(--color-danger);
+  }
+
   .turn-steps__list {
     border-top: 1px solid var(--color-border);
     padding: 8px 10px 10px;
@@ -1421,6 +1427,16 @@ body {
     display: flex;
     align-items: center;
     gap: 6px;
+  }
+
+  .composer-card__status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    padding: 6px 2px;
+    font-size: 12px;
+    color: var(--color-ink-soft);
   }
 
   .composer-card__blocker {

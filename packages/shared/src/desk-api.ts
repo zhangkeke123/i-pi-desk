@@ -46,6 +46,7 @@ import type {
   Workspace
 } from './types.js'
 import type { PluginView } from './plugin.js'
+import type { UpdateStatus } from './update.js'
 import type {
   McpServerConfigView,
   McpServerSaveInput,
@@ -88,6 +89,10 @@ export interface DeskApi {
      */
     setEditorDirty: (dirty: boolean) => Promise<Result<{ dirty: boolean }>>
     confirmQuit: () => Promise<Result<{ closing: boolean }>>
+    updateStatus: () => Promise<Result<UpdateStatus>>
+    updateCheck: () => Promise<Result<UpdateStatus>>
+    updateInstall: () => Promise<Result<UpdateStatus>>
+    updateOpen: () => Promise<Result<UpdateStatus>>
   }
   workspace: {
     list: () => Promise<Result<Workspace[]>>
@@ -263,6 +268,7 @@ export interface DeskApi {
      * 只有渲染层知道 —— 所以是主进程请求、渲染层决定。
      */
     onCloseRequested: (cb: () => void) => Unsubscribe
+    onUpdate: (cb: (payload: UpdateStatus) => void) => Unsubscribe
   }
   /**
    * 插件管理。

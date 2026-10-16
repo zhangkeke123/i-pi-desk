@@ -25,6 +25,7 @@ import {
 import type { ApprovalDecision, MessagePart } from '@i-pi-desk/shared'
 import { DiffView } from '../diff/DiffView.js'
 import { approvalTimer } from '../../lib/approval-timer.js'
+import { summarizeSteps } from '../../lib/step-summary.js'
 
 /**
  * 单条消息的内容渲染。
@@ -32,14 +33,6 @@ import { approvalTimer } from '../../lib/approval-timer.js'
  * 每种 part 用独立组件，不要写成一个巨型 switch —— 后面加「diff 视图」「图片」
  * 「文件引用」时都是新增一个分支组件，不用动既有逻辑。
  */
-
-function stepsNeedAutoExpand(parts: MessagePart[]): boolean {
-  return parts.some(
-    (part) =>
-      (part.kind === 'tool-call' && (part.state === 'awaiting-approval' || part.state === 'failed')) ||
-      (part.kind === 'approval' && !part.decision)
-  )
-}
 
 function isContentPart(part: MessagePart): boolean {
   return part.kind === 'text' || part.kind === 'reasoning' || part.kind === 'error'
@@ -58,13 +51,13 @@ function TurnLayoutParts({
 }): React.ReactElement {
   const contentParts = parts.filter(isContentPart)
   const stepParts = parts.filter(isStepPart)
-  const autoExpand = stepsNeedAutoExpand(stepParts)
-  /** Phase A：步骤默认展开，便于预览工具与确认；审批/失败仍强制开。 */
-  const [stepsOpen, setStepsOpen] = useState(true)
+  const summary = summarizeSteps(stepParts)
+  /** 成功默认收起；审批中 / 失败 / 执行中强制展开。 */
+  const [stepsOpen, setStepsOpen] = useState(summary.startOpen)
 
   useEffect(() => {
-    if (autoExpand) setStepsOpen(true)
-  }, [autoExpand])
+    if (summary.startOpen) setStepsOpen(true)
+  }, [summary.startOpen])
 
   return (
     <div className="space-y-2" data-testid="message-parts">
@@ -81,8 +74,12 @@ function TurnLayoutParts({
             aria-expanded={stepsOpen}
           >
             <ChevronRight size={12} className={`turn-steps__chevron ${stepsOpen ? 'turn-steps__chevron--open' : ''}`} />
-            <span>{stepParts.length} 个步骤</span>
-            <span className="turn-steps__hint">工具与确认</span>
+            <span>{summary.total} 个步骤</span>
+            {summary.issues > 0 ? (
+              <span className="turn-steps__issues">{summary.issues} 个问题</span>
+            ) : (
+              <span className="turn-steps__hint">{stepsOpen ? '收起' : '展开工具与确认'}</span>
+            )}
           </button>
           {stepsOpen && (
             <div className="turn-steps__list space-y-2">

@@ -43,6 +43,7 @@ import {
   type TerminalExitEvent,
   type TerminalSession,
   type Unsubscribe,
+  type UpdateStatus,
   type Workspace,
   type WorkspaceFacts,
   type WorkspaceEvent
@@ -73,7 +74,11 @@ const desk: DeskApi = {
   app: {
     info: () => invoke<AppInfo>(IPC.invoke.appInfo),
     setEditorDirty: (dirty: boolean) => invoke<{ dirty: boolean }>(IPC.invoke.editorDirty, { dirty }),
-    confirmQuit: () => invoke<{ closing: boolean }>(IPC.invoke.quitConfirmed)
+    confirmQuit: () => invoke<{ closing: boolean }>(IPC.invoke.quitConfirmed),
+    updateStatus: () => invoke<UpdateStatus>(IPC.invoke.updateStatus),
+    updateCheck: () => invoke<UpdateStatus>(IPC.invoke.updateCheck),
+    updateInstall: () => invoke<UpdateStatus>(IPC.invoke.updateInstall),
+    updateOpen: () => invoke<UpdateStatus>(IPC.invoke.updateOpen)
   },
   workspace: {
     list: () => invoke<Workspace[]>(IPC.invoke.workspaceList),
@@ -174,7 +179,8 @@ const desk: DeskApi = {
     onTerminalData: (cb) => subscribe<TerminalDataEvent>(IPC.event.terminalData, cb),
     onTerminalExit: (cb) => subscribe<TerminalExitEvent>(IPC.event.terminalExit, cb),
     // 主进程想关窗但有未保存改动时，请渲染层问一句。
-    onCloseRequested: (cb) => subscribe<undefined>(IPC.event.closeRequested, () => cb())
+    onCloseRequested: (cb) => subscribe<undefined>(IPC.event.closeRequested, () => cb()),
+    onUpdate: (cb) => subscribe<UpdateStatus>(IPC.event.update, cb)
   },
   plugins: {
     list: () => invoke<PluginView[]>(IPC.invoke.pluginsList),

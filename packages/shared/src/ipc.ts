@@ -109,7 +109,12 @@ export const IPC = {
      */
     editorDirty: 'desk:editor/dirty',
     /** 用户在「不保存并退出」上确认过：这一次关窗不再拦截。 */
-    quitConfirmed: 'desk:app/quitConfirmed'
+    quitConfirmed: 'desk:app/quitConfirmed',
+
+    updateStatus: 'desk:update/status',
+    updateCheck: 'desk:update/check',
+    updateInstall: 'desk:update/install',
+    updateOpen: 'desk:update/open'
   },
   event: {
     agent: 'desk:event/agent',
@@ -119,7 +124,8 @@ export const IPC = {
     terminalData: 'desk:event/terminalData',
     terminalExit: 'desk:event/terminalExit',
     /** 主进程想关窗、但有未保存的改动：请渲染层问一句。 */
-    closeRequested: 'desk:event/closeRequested'
+    closeRequested: 'desk:event/closeRequested',
+    update: 'desk:event/update'
   }
 } as const
 

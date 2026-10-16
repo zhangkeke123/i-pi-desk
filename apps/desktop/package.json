@@ -1,6 +1,6 @@
 {
   "name": "@i-pi-desk/desktop",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "i-pi-desk desktop application",
   "author": "i-pi-desk",
@@ -12,7 +12,7 @@
     "build": "electron-vite build",
     "preview": "electron-vite preview",
     "typecheck": "tsc -p tsconfig.node.json --noEmit && tsc -p tsconfig.web.json --noEmit",
-    "test": "node --experimental-strip-types scripts/verify-provider-key.ts && node --experimental-strip-types scripts/verify-window-state.ts && node --experimental-strip-types scripts/verify-diff-parse.ts && node --experimental-strip-types scripts/verify-workspace-fs.ts && node --experimental-strip-types scripts/verify-skills.ts && node --experimental-strip-types scripts/verify-pty-failure.ts && node --experimental-strip-types scripts/verify-close-guard.ts && node --experimental-strip-types scripts/verify-session-scope.ts && node --experimental-strip-types scripts/verify-workspace-list.ts && node --experimental-strip-types scripts/verify-ui-logic.ts && node --experimental-strip-types scripts/verify-workspace-facts.ts",
+    "test": "node --experimental-strip-types scripts/verify-provider-key.ts && node --experimental-strip-types scripts/verify-window-state.ts && node --experimental-strip-types scripts/verify-diff-parse.ts && node --experimental-strip-types scripts/verify-workspace-fs.ts && node --experimental-strip-types scripts/verify-skills.ts && node --experimental-strip-types scripts/verify-pty-failure.ts && node --experimental-strip-types scripts/verify-close-guard.ts && node --experimental-strip-types scripts/verify-session-scope.ts && node --experimental-strip-types scripts/verify-workspace-list.ts && node --experimental-strip-types scripts/verify-ui-logic.ts && node --experimental-strip-types scripts/verify-workspace-facts.ts && node --experimental-strip-types scripts/verify-update-policy.ts",
     "verify:renderer": "pnpm run ensure:electron && pnpm run build:deps && pnpm run build && node scripts/verify-renderer.mjs",
     "verify:packaged": "pnpm run ensure:electron && node scripts/verify-packaged.mjs",
     "verify:bundle": "pnpm run build:deps && pnpm run build && node scripts/verify-bundle.mjs",
@@ -100,6 +100,10 @@
         "to": "install-defaults.json"
       },
       {
+        "from": "resources/update-feed.json",
+        "to": "update-feed.json"
+      },
+      {
         "from": "resources/icon.ico",
         "to": "icon.ico"
       }
@@ -126,6 +130,11 @@
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "artifactName": "${productName}-${version}-win-${arch}-setup.${ext}"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "zhangkeke123",
+      "repo": "i-pi-desk"
     },
     "npmRebuild": false,
     "asarUnpack": [

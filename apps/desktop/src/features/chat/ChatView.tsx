@@ -18,7 +18,7 @@ import { SessionPreviewRail } from './SessionPreviewRail.js'
 import { ComposerCard } from './ComposerCard.js'
 import { currentStepText, describeRunSteps, formatElapsed, limitWarning, maxStepsNotice } from '../../lib/run-status.js'
 import { composerBlocker, isStubProvider } from '../../lib/composer-blocker.js'
-import { MESSAGE_WINDOW, hiddenLabel, windowMessages } from '../../lib/message-window.js'
+import { MESSAGE_WINDOW, hiddenContextNote, hiddenLabel, windowMessages } from '../../lib/message-window.js'
 import { buildStarters, emptyStateTitle } from '../../lib/starters.js'
 import { call, getDesk } from '../../lib/desk.js'
 import { summarizeRun } from '../../lib/run-summary.js'
@@ -249,14 +249,17 @@ export function ChatView({ onOpenSettings }: { onOpenSettings: () => void }): Re
             而条数也是「这个会话有多长」的一个信息。
           */}
           {messageWindow.hiddenCount > 0 && (
-            <button
-              type="button"
-              data-testid="show-earlier"
-              onClick={() => setShowAllMessages(true)}
-              className="mx-auto block rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 py-1.5 text-2xs text-[var(--color-muted)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-ink)]"
-            >
-              {hiddenLabel(messageWindow.hiddenCount)}
-            </button>
+            <div className="text-center">
+              <button
+                type="button"
+                data-testid="show-earlier"
+                onClick={() => setShowAllMessages(true)}
+                className="rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 py-1.5 text-2xs text-[var(--color-muted)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-ink)]"
+              >
+                {hiddenLabel(messageWindow.hiddenCount)}
+              </button>
+              <p className="mt-1 text-2xs text-[var(--color-muted)]">{hiddenContextNote(messageWindow.hiddenCount)}</p>
+            </div>
           )}
 
           {messageWindow.visible.map((message, index, visible) => (
@@ -274,13 +277,6 @@ export function ChatView({ onOpenSettings }: { onOpenSettings: () => void }): Re
               />
             </div>
           ))}
-
-          {/*
-            思考态：尚无 live 气泡时单独一行；有 live 气泡时并入该 turn 卡 footer（同 testid）。
-          */}
-          {busy && liveParts.length === 0 && (
-            <RunStatusLine runStep={runStep} runElapsed={runElapsed} />
-          )}
 
           {/*
             接近上限就提前说（设计稿 §3.8）：撞上之后再解释已经晚了 ——
@@ -318,9 +314,6 @@ export function ChatView({ onOpenSettings }: { onOpenSettings: () => void }): Re
                   parts: liveParts
                 }}
                 streaming
-                runStep={runStep}
-                runElapsed={runElapsed}
-                showRunStatus
                 onDecide={(id, decision) => void resolveApproval(id, decision)}
               />
             </div>
@@ -418,6 +411,8 @@ export function ChatView({ onOpenSettings }: { onOpenSettings: () => void }): Re
         runStartedAt={runStartedAt}
         clockNow={clockNow}
         toolProgress={toolProgress}
+        runStep={runStep}
+        runElapsed={runElapsed}
         onInjected={() => setInject(null)}
         onSend={(text) => void sendPrompt(text)}
         onAbort={() => void abort()}
@@ -447,26 +442,6 @@ function looksLikeConfigError(message: string): boolean {
   return /还没有配置|还没有可用模型|缺少 API Key|provider 不存在/.test(message)
 }
 
-function RunStatusLine({
-  runStep,
-  runElapsed
-}: {
-  runStep: string | undefined
-  runElapsed: string | null
-}): React.ReactElement {
-  return (
-    <div data-testid="run-status" className="run-status-line">
-      <Loader2 size={12} className="shrink-0 animate-spin text-[var(--color-accent)]" />
-      <span className="min-w-0 flex-1 truncate text-[var(--color-ink-soft)]">{runStep ?? '正在思考…'}</span>
-      {runElapsed && (
-        <span className="shrink-0 font-mono tabular-nums" title="本次运行已用时长">
-          {runElapsed}
-        </span>
-      )}
-    </div>
-  )
-}
-
 function turnFooterText(message: ChatMessage, endedAt?: string): string | null {
   const toolCount = message.parts.filter((part) => part.kind === 'tool-call').length
   const started = Date.parse(message.createdAt)
@@ -490,17 +465,11 @@ function Bubble({
   message,
   streaming,
   endedAt,
-  runStep,
-  runElapsed,
-  showRunStatus,
   onDecide
 }: {
   message: ChatMessage
   streaming?: boolean
   endedAt?: string
-  runStep?: string
-  runElapsed?: string | null
-  showRunStatus?: boolean
   onDecide: (approvalId: string, decision: 'allow-once' | 'allow-always' | 'deny') => void
 }): React.ReactElement {
   const isUser = message.role === 'user'
@@ -546,13 +515,9 @@ function Bubble({
         <MessageParts parts={message.parts} onDecide={onDecide} layout="turn" />
       </div>
 
-      {(footer || showRunStatus) && (
+      {footer && (
         <footer className="turn-card__foot">
-          {showRunStatus ? (
-            <RunStatusLine runStep={runStep} runElapsed={runElapsed ?? null} />
-          ) : (
-            <span>{footer}</span>
-          )}
+          <span>{footer}</span>
         </footer>
       )}
     </article>

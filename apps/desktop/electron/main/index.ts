@@ -95,7 +95,14 @@ async function bootstrap(): Promise<void> {
     log
   }
 
-  registerAllIpc(ctx)
+  registerAllIpc(ctx, async () => {
+    const disposedTerminals = terminalHost?.disposeAll() ?? 0
+    if (disposedTerminals > 0) log(`[terminal] 更新前回收 ${disposedTerminals} 个终端会话`)
+    terminalHost = null
+    const stopping = supervisor
+    supervisor = null
+    if (stopping) await stopping.stop()
+  })
   supervisor.start()
 
   // 终端会话归属于创建它的 webContents。窗口一销毁就收掉它建的 PTY ——

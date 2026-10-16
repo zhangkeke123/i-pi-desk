@@ -177,6 +177,8 @@ export function ComposerCard({
   runStartedAt,
   clockNow,
   toolProgress,
+  runStep,
+  runElapsed,
   onInjected,
   onSend,
   onAbort
@@ -191,6 +193,9 @@ export function ComposerCard({
   clockNow: number
   /** 0–1 工具步进度；undefined 则环为脉冲 */
   toolProgress?: number
+  /** 钉在输入框上方，滚走消息流也能看见当前在干什么 */
+  runStep?: string
+  runElapsed?: string | null
   onInjected: () => void
   onSend: (text: string) => void
   onAbort: () => void
@@ -269,7 +274,8 @@ export function ComposerCard({
 
   const submit = (): void => {
     const value = text.trim()
-    if (!value || busy) return
+    // 缺目录 / 缺模型时不发：文案留在输入框，避免回车后才报错。
+    if (!value || busy || blocker) return
     setText('')
     setHistoryIndex(null)
     draftRef.current = ''
@@ -279,6 +285,17 @@ export function ComposerCard({
   return (
     <div className="composer-card shrink-0 px-4 pb-4 pt-2">
       <div className="composer-card__inner mx-auto max-w-3xl">
+        {busy && (
+          <div data-testid="run-status" className="composer-card__status">
+            <span className="min-w-0 flex-1 truncate">{runStep ?? '正在思考…'}</span>
+            {runElapsed ? (
+              <span className="shrink-0 font-mono tabular-nums" title="本次运行已用时长">
+                {runElapsed}
+              </span>
+            ) : null}
+          </div>
+        )}
+
         {blocker && (
           <div data-testid="composer-blocker" className="composer-card__blocker">
             <span className="min-w-0 flex-1">{blocker.text}</span>
@@ -312,7 +329,13 @@ export function ComposerCard({
               }
             }}
             rows={2}
-            placeholder={blocked ? '有操作等待你的确认…' : '描述任务，或粘贴报错…'}
+            placeholder={
+              blocked
+                ? '有操作等待你的确认…'
+                : blocker
+                  ? '先处理上面的提示，再发送'
+                  : '描述任务，或粘贴报错…（Enter 发送，Shift+Enter 换行）'
+            }
             className="composer-card__textarea"
           />
 
@@ -394,7 +417,7 @@ export function ComposerCard({
                 <button
                   type="button"
                   onClick={submit}
-                  disabled={!text.trim()}
+                  disabled={!text.trim() || Boolean(blocker)}
                   className="btn btn-primary h-8 w-8 rounded-full px-0"
                   title="发送"
                   aria-label="发送"

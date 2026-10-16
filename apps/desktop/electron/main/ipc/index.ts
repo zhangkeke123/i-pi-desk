@@ -13,13 +13,15 @@ import { registerSkillsIpc } from './skills-ipc.js'
 import { registerMcpIpc } from './mcp-ipc.js'
 import { registerSubagentsIpc } from './subagents-ipc.js'
 import { registerTerminalIpc } from './terminal-ipc.js'
+import { registerUpdateIpc } from './update-ipc.js'
 import { registerWorkspaceIpc } from './workspace-ipc.js'
 import { syncMcpRuntime } from '../store/mcp.js'
 import { syncSubagentsRuntime } from '../store/subagents.js'
 
 /** IPC 注册的唯一入口。新增一个域就在这里加一行。 */
-export function registerAllIpc(ctx: AppContext): void {
+export function registerAllIpc(ctx: AppContext, prepareQuit: () => Promise<void>): void {
   registerAppIpc(ctx)
+  registerUpdateIpc(ctx, prepareQuit)
   registerWorkspaceIpc(ctx)
   registerSessionIpc(ctx)
   registerAgentIpc(ctx)

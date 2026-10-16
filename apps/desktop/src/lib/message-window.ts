@@ -51,3 +51,9 @@ export function windowMessages<T>(messages: T[], limit: number = MESSAGE_WINDOW,
 export function hiddenLabel(hiddenCount: number): string {
   return `显示更早的 ${hiddenCount} 条消息`
 }
+
+/** 说明这些消息默认不在模型上下文里，避免用户以为「它忘了」。 */
+export function hiddenContextNote(hiddenCount: number): string {
+  if (hiddenCount <= 0) return ''
+  return `这 ${hiddenCount} 条默认不发给模型，点开只是给你看`
+}
